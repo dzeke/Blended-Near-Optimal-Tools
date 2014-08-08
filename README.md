@@ -1,14 +1,14 @@
 Blended Near-Optimal Tools
 ==============================
-This repository stores the Matlab source code for blended near-optimal tools that (i) generate alternatives, (ii) visualize alternatives and allow a user to interactively explore the region from which the alternatives are generated. The repository also contains the (iii) data and model files for an example water quality management application for Echo Reservoir, Utah as well as the (iv) paper, scripts and directions to generate each figure in the paper that describes these tools.
+This repository stores the Matlab 2013a source code for blended near-optimal tools that (i) generate alternatives, (ii) visualize alternatives and allow a user to interactively explore the region from which the alternatives are generated. The repository also contains the (iii) data and model files for an example water quality management application for Echo Reservoir, Utah as well as the (iv) paper, scripts and directions to generate each figure in the paper that describes these tools.
 
-1) ALTERNATIVE GENERATION
+1) GENERATE ALTERNATIVES
 
 Uses stratified Monte-Carlo Markov Chain sampling to identify a large number of near-optimal alternatives that comprehensively span the region through both the decision and objective spaces.
 
 2) PARALLEL COORDINATE VISUALIZATION and INTERACTION
 
-Parallel coordinate plot [Inselberg, 2009; Wegman, 1990] places axes for all objectives and decision variables side-by-side on a single page and shows the generated alternatives across the decision and objective spaces. Interaction controls on and next to the plot:
+Parallel coordinate plot places axes for all objectives and decision variables side-by-side on a single page and shows the generated alternatives across the decision and objective spaces. Interaction controls on and next to the plot:
 -	Render generated alternatives (mouse-over to read a value, highlight individual or groups of alternatives on the plot, and specify the axes order from left to right across the plot).
 -	Allow the users to explore the near-optimal region (set sliders on axes to specify features, dynamically update the model formulation, and generate individual or families of new alternatives with specified features) 
 -	Direct exploration into different parts of the region (re-order axes or relax the constraint that specifies the size of the region.
@@ -20,9 +20,9 @@ Tools are described here for near-optimal optimization problems but are general 
 
 Illustrates use of the tools for a water quality management problem to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
 
-4) DOCUMENTATION
+4) PAPER and SCRIPTS
 
-Includes the submitted paper (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. Further documentation is provided at the top of each source code file.
+Includes the submitted paper (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. Further documentation on each tool is provided in the sub-directory of each tool (XXXX-readme.txt) as well as at the top of each source code file.
 
 ==================
 CITATION
