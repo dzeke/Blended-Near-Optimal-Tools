@@ -1,18 +1,48 @@
-Interactive-Parallel-Coordinate-Plot
-====================================
-Makes a parallel coordinate plot and creates a graphical user interface (GUI) to allow a user to interact with the plot to rearrange axes, highlight rows, and generate new alternatives.
+Blended Near-Optimal Tools
+==============================
+This repository stores the Matlab source code for blended near-optimal tools that (i) generate alternatives, (ii) visualize alternatives and allow a user to interactively explore the region from which the alternatives are generated. The repository also contains the (iii) data and model files for an example water quality management application for Echo Reservoir, Utah as well as the (iv) paper, scripts and directions to generate each figure in the paper that describes these tools.
 
-The major functionalities are:
+1) ALTERNATIVE GENERATION
 
-1) Option to link objective and decision spaces for solutions to an optimization problem and plot all on the same parralel coordinate plot. (nO number of Objective Functions and their values are plotted on the first 1..nO axes while nD number of decision variables and their values are plotted on the subsequent axes to the right).
+Uses stratified Monte-Carlo Markov Chain sampling to identify a large number of near-optimal alternatives that comprehensively span the region through both the decision and objective spaces.
 
-2) Tools to control the displaying, brush, pivot, and interactively manipulate the objective function and decision variable data matricies as well as rows within them (i.e., both by columns/axes and rows/groups/color). 
+2) PARALLEL COORDINATE VISUALIZATION and INTERACTION
 
-3) Tools to select particular solutions (or attributes of solutions) and generate new alterantives, e.g., for near-optimal analysis.
+Parallel coordinate plot [Inselberg, 2009; Wegman, 1990] places axes for all objectives and decision variables side-by-side on a single page and shows the generated alternatives across the decision and objective spaces. Interaction controls on and next to the plot:
+-	Render generated alternatives (mouse-over to read a value, highlight individual or groups of alternatives on the plot, and specify the axes order from left to right across the plot).
+-	Allow the users to explore the near-optimal region (set sliders on axes to specify features, dynamically update the model formulation, and generate individual or families of new alternatives with specified features) 
+-	Direct exploration into different parts of the region (re-order axes or relax the constraint that specifies the size of the region.
+-	Save figure settings to the Matlab e workspace and use to recreate the figure
+-	Optional parameters/settings to control how the plot is displayed and labeled (varargin)
+Tools are described here for near-optimal optimization problems but are general and can be used for any high-dimensional data set or system of equations.
 
-4) Tools to save the current figure settings to the Matlab base workspace and use to recreate the figure
+3) ECHO RESERVOIR APPLICATION
 
-5) A variety of parameters/settings to control how the parallel coordinate plot is displayed and labeled (varargin)
+Illustrates use of the tools for a water quality management problem to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
 
-Written in Matlab
+4) DOCUMENTATION
+
+Includes the submitted paper (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. Further documentation is provided at the top of each source code file.
+
+==================
+CITATION
+
+David E. Rosenberg (in review) "Near-optimal alternative generation, visualization, and interaction for water resources decision making". Water Resources Research. Submitted August 2014.
+
+LICENSING
+
+All code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The code or parts may be used for any non-commercial purpose so long as the use is cited per the citation above. Use for any commercial purpose requires prior written permission from the author.
+
+BUG REPORTS and FEEDBACK
+
+This code is possibly laden with bugs so bug reports and feedback are much appreciated. Please submit via the the issue tracker for this repository. And note, that while much appreciated, there is no promise of when--or if--the bug will be fixed.
+
+David E. Rosenberg
+
+Department of Civil & Environmental Engineering and Utah Water Research Lab
+
+Utah State University
+
+Email: david.rosenberg@usu.edu
+
 
