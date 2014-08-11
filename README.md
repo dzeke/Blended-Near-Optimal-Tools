@@ -16,9 +16,9 @@ Parallel coordinate plot places axes for all objectives and decision variables s
 -	Optional parameters/settings to control how the plot is displayed and labeled (varargin)
 Tools are described here for near-optimal optimization problems but are general and can be used for any high-dimensional data set or system of equations.
 
-3) ECHO RESERVOIR APPLICATION
+3) ECHO RESERVOIR WATER QUALITY MANAGEMENT APPLICATION
 
-Illustrates use of the tools for a water quality management problem to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
+Illustrates use of the tools for a linear program to identify the cost-effective phosphorus removal practices to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah to a level specified in a pending Total Maximum Daily Load (TMDL) program for the reservoir. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
 
 4) PAPER and SCRIPTS
 
