@@ -31,7 +31,7 @@ David E. Rosenberg (in review) "Near-optimal alternative generation, visualizati
 
 LICENSING
 
-All code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The code or parts may be used for any non-commercial purpose so long as the use is cited per the citation above. Use for any commercial purpose requires prior written permission from the author.
+All code is distributed AS-IS with no expressed or implied warranty regarding functionality. The code or parts may be used for non-commercial purposes so long as the use is cited per the citation above. Use for any commercial purpose requires prior written permission from the author.
 
 BUG REPORTS and FEEDBACK
 
