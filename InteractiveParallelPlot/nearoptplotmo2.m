@@ -50,8 +50,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %      so that the user can specify optional parameter settings. Each pair starts with the parameter name as a text string
 %      and is followed by the parameter value.
 %      If a parameter is omitted or in incorrect format, the default value
-%      is used. e.g., varargin = {'hWind',1,'SubSpaceError',0.2} would set the
-%      parameters hWind and SubSpaceError, to the values, respectively,
+%      is used. e.g., varargin = {'hWind',1,'AllowableDeviation',0.2} would set the
+%      parameters hWind and AllowableDeviation, to the values, respectively,
 %      of 1 and 0.2. Below is a listing of the parameters followed
 %      by their meanings and default values (listed in parenthesis).
 %
@@ -63,17 +63,16 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %         Populates a text box on the Interact tab for generating additional data sets. For multiobjective problems this is a
 %         vector of values (Default value: nO by 1 vector of 1s)
 %
-%     SubSpaceError = the error allowed in selecting data points within a
-%         (small) range of the set value to highlight on the current plot
-%         during mouseover or include on a sub-space plot. This value is specified in
+%     AllowableDeviation = the deviation from the slider set value allowed when generating new alternatives
+%         or highlighting alternatives on the plot. This value is specified in
 %         units of fraction of a tick and can
 %         also be dynamically changed by entering a value in the textbox on
-%         the Interact Tab. (Default is 0 [no error]).
+%         the Interact Tab. The value allows the user to define a family of alternatives all having
+%         values for the specified decision variables within the (Slider Set Value) +/- (Allowable Deviation)*(Tick Spacing)
+%         (Default is 0 [no deviation]).
 %         E.g., if the ticks for the axis are in units of 0, 5000, 10000,
-%         ..., entering a SubSpaceError of 0.1 will select all solutions
-%         within +/- 500 of the set value. This value is also used when
-%         re-sampling new points within the polytope defined by AMat and
-%         Bhrs.
+%         ..., entering a AllowableDeviation of 0.1 will select all
+%         alternatives within +/- 500 of the set value.
 %
 %     GenerateType = index that takes the values 1 (single solution), 2 (maximum extents), 3 (random sample), or 4 (enumerate for MIPs) to indicate
 %           the type of new alternative(s) genreated when clicking the
@@ -178,18 +177,30 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %
 %     mHighlightColor = a 1 by 3 matrix indicating the colors to use for
 %           highlighted lines on the plot (Group values =
-%           GroupToHightlight). (Default value is Thick Black for 
-%           all [0 0 0])
+%           GroupToHightlight). (Default value is Black [0 0 0])
 %    
-%     ShowObsDiffColor = boolean with a value of 1 to show the
+%     ShowControls = boolean takes the value of 1 to show the plot
+%           controls as a panel of controls on the right of the main plot. Can
+%           also be set from the Controls=>Hide all controls menu option.
+%           (Default Value: 1 [show controls])
+%
+%     ShowGroupLabels = boolean takes the value of 1 to show a table below
+%           the parallel coordinate axes labels that groups axes. 0 To high. Can
+%           also be set from the Controls=>Show group labels menu option.
+%           (Default Value: 0 [hide group labels]).
+
+%     ShowObjsDiffColor = boolean with a value of 1 to show the
 %           objective function axes values, if they exist, in a different color
 %           [specified in mColor(:,2,:,:)]. 0 to show the objective function axes
 %           values in the same colors the mDecisions [i.e., mColor(:,1,:,:)].
 %           Also available for user selection from the Controls menu.
 %           (Default value: 0 [different color]).
 %
-%     SubSpaceGroup = value in vGroup representing the current group of solutions in the highlighted subspace (Default: 0 [none])
-    
+%     ShowInsetPlot = boolean takes a value of 1 to show an inset plot in
+%           cartesian coordinates for the 2 objectives. 0 hides. Ignores
+%           if the problem does not have two objectives. (Default value: 0
+%           [hide]).
+%  
 %     AxesScales = Parameter that determines how to transform columns of values in the mObjs and mDecisions matrices
 %             so they can be plotted side-by-side on the same plot to see the dynamic ranges of values on each axis. The transformation
 %             also updates the tick measurements reported on the left and right scales and possibly the axis labels. The AxisScales settings are:
@@ -293,16 +304,6 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %           NearOptConstraints (above) this parameter is used to update the near-optimal constraint
 %            when generating alternatives. For multi-objective problems,this will
 %           be a vector of indexes (Default value []).
-
-%     ShowControls = boolean takes the value of 1 to show the plot
-%           controls as menu items on the right and checkboxes/sliders. Can
-%           also be set from the Controls=>Hide all controls menu option.
-%           (Default Value: 1 [show controls])
-%
-%     ShowGroupLabels = boolean takes the value of 1 to show a table below
-%           the parallel coordinate axes labels that groups axes. 0 To high. Can
-%           also be set from the Controls=>Show group labels menu option.
-%           (Default Value: 0 [hide group labels]).
 %
 %     StartTab = integer or cell that specifies the tab index to show as
 %           visible on start up. User can click tab buttons to dynamically change. 
@@ -368,12 +369,12 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %       controls. To make visible, uncheck Controls=>Hide all controls on
 %       the menu.
 %
-% E) nearoptplotmo2(150000*rand(30,2),[5*rand(30,1) 20*rand(30,1) 5*rand(30,6)],'vGroup',[ones(20,1);2*ones(10,1)],'AxisScales','auto');
+% E) nearoptplotmo2(150000*rand(30,2),[5*rand(30,1) 20*rand(30,1) 5*rand(30,6)],'vGroup',[ones(20,1);2*ones(10,1)],'AxisScales','auto','FontSize',18,'ShowObjsDiffColor',0);
 %       Displays 30 traces across 9 axes. Assigns the first 20 rows to Group 1 plotted in light green and
 %       last 10 rows to Group 2 plotted in blue.
 %
 % F) MyGroups = {'Group 2' 'Group 2' 'Group 2' 'Group 1' 'Group 1'}';
-%    nearoptplotmo2(150000*rand(5,2),[5*rand(5,1) 20*rand(5,1) 5*rand(5,6)],'vGroup',MyGroups,'AxisScales','auto');
+%    nearoptplotmo2(150000*rand(5,2),[5*rand(5,1) 20*rand(5,1) 5*rand(5,6)],'vGroup',MyGroups,'AxisScales','auto','FontSize',18,'ShowObjsDiffColor',0);
 %       Like E but text labels used for groups. Note groups are ordered
 %       alphanumerically so Group 1 still listed and plotted first in light green.
 %   
@@ -432,7 +433,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %% Set default field values
     hWind = 0;
     Tolerance = ones(nO,1);
-    SubSpaceError = 0;
+    AllowableDeviation = 0;
     NumSamples=0;
     Precision=2;
     vFixed = zeros(n,1);
@@ -452,7 +453,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     yAxisLabels = {'Objective Functions' 'Decision Variables'};
 
     fontsize = 16;
-    mActCat = ones(nD,1);
+    mActCat = ones(nD,1); lShowGroupLabelsEnable = 'off';
     AxisScales='none';
     BaseAxis=[min(nO,1) 1];  %put a zero in the first element if there are no objective axes
     NumTicks = [6 6];
@@ -463,8 +464,6 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     lCurrRecord = 1; %First record
     lShowCurrRecord = 0; %Do not show
     lShowFiltered = 0; %Do not show
-    
-    SubSpaceGroup = 0;
     
     vGroup = ones(m,1);
     vGroupOrder = [];
@@ -479,7 +478,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     NearOptConstraint = []; NearOptConstraintTemp = [];
     OptSolRow = []; OptSolRowTemp = [];
     
-    HideSliders = 1;
+    HideSliders = 1; HideCheckboxes = 0;
     GenType = 1;
     GenMethod = 1;
     sGamsFile = '';
@@ -489,7 +488,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     PlotPosition = [0.100 yBottom 0.615 0.6182 - yBottom + 0.3068];
     PanelWidth = 60; %Characters; PanelWidth = 285; %pixel
     
-    ShowControls = 1; lShowGroupLabels = 0;
+    ShowControls = 1; lShowGroupLabels = 0; ShowInsetPlot = 0;
     
     ButtonText = {'Interact' 'Color Ramp' 'Display'};
     StartTab = 3;
@@ -497,7 +496,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     cStartTab = ButtonText(lStartTab); %Cell value
     
     %Fields to ignore
-    IgnoreFields = {'mConvert' 'SubSpaceErrorPU' 'nO'};
+    IgnoreFields = {'mConvert' 'AllowableDeviationPU' 'nO', 'SubSpaceGroup' 'SubSpaceError' 'SubSpaceErrorPU'};
     
     %% Read in the optional parameters from the variable argument list
     % to overide default values
@@ -531,8 +530,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
                 count=count+1;
                 
-            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'SubSpaceError'))            
-                SubSpaceError = varargin{count+1};
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'AllowableDeviation'))            
+                AllowableDeviation = varargin{count+1};
                 count=count+1;
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'NumSamples'))            
@@ -549,6 +548,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'HideSliders'))            
                 HideSliders = varargin{count+1};
+                count=count+1;
+                
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'HideCheckboxes'))            
+                HideCheckboxes = varargin{count+1};
                 count=count+1;
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'Precision'))            
@@ -580,13 +583,12 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 count=count+1;
             
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'mActCat'))
-                varargin{count};
-                varargin{count+1};
                 
                 if (size(varargin{count+1},1) == nD)
                     mActCat = varargin{count+1};
+                    lShowGroupLabelsEnable = 'on';
                 else
-                    warning(['nearoptplotmo2: mActCat has a different number of rows than the number of columns in mDecisions', num2str(nD), '. Continuing with default mActCat.'])
+                    warning(['nearoptplotmo2: mActCat has a different number of rows than the number of columns in mDecisions', num2str(nD), '. Ignoring input.'])
                 end
                 count=count+1;
 
@@ -708,11 +710,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
              elseif (ischar(varargin{count}) && strcmpi(varargin{count},'ShowObjsDiffColor'))
                 lShowObjsDiffColor = varargin{count+1};
-                count=count+1;               
-                               
-            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'SubSpaceGroup'))
-                SubSpaceGroup = varargin{count+1};
-                count=count+1;
+                count=count+1;              
   
             elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'AMat'))
                 AMatTemp = varargin{count+1};
@@ -848,6 +846,18 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 end
                 
                 count=count+1;    
+                
+                
+            elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'ShowInsetPlot'))
+                ShowInsetPlotTemp = varargin{count+1};
+                
+                if (nO==2)
+                    ShowInsetPlot=ShowInsetPlotTemp;
+                elseif (ShowInsetPlotTemp > 0)
+                    warning(['nearoptplotmo2: Ignoring ShowInsetPlot input. ', num2str(nO), ' objectives provided. Must have 2 objectives to show Inset Plot. Continuing with default.'])
+                end
+                
+                count=count+1;  
               
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'vObjLabels'))
               %Objective Function Labels
@@ -973,9 +983,14 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
          
          %If showing group labels table, need to have the table of
          %mActCat to show
-         if lShowGroupLabels && isempty(mActCat)
-             warning('nearoptplotmo2: Need to specify the mActCat of decision axes groupings to show the grouping table. Reverting to default of hiding the table.')
+         if lShowGroupLabels && strcmpi(lShowGroupLabelsEnable,'off')
+             warning('nearoptplotmo2: Need to specify the mActCat of decision axes groupings to show the grouping table. This feature will be disabled.')
              lShowGroupLabels = 0;
+         end
+         if isnumeric(mActCat) && (all(mActCat == ones(nD,1)))
+             %mActCat at it's default setting; disable the menu item anyway
+             lShowGroupLabels = 0;
+             lShowGroupLabelsEnable = 'off';
          end
     end
     
@@ -1491,7 +1506,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                          s1=vAxisLabelsAll{i};
                          s2='';
                      else 
-                         [s1 s2] = strread(vAxisLabelsAll{i},'%s %s','delimiter','(');
+                         [s1, s2] = strread(vAxisLabelsAll{i},'%s %s','delimiter','(');
                          s2 = strcat(' (',s2);
                      end
                     %reformat the label with adjustment factor added
@@ -1564,8 +1579,6 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     mColorChoices = [mColorMatrix(2,3,:);mColorMatrix(5,3,:);mColorMatrix(1,3,:)];
     mColorFull = [mColorMatrix(2,:,:);mColorMatrix(5,:,:);mColorMatrix(1,:,:)];
     
-    mActCat;
-    
     [vUniques, iC, uIndex, iCBeg, iVBeg] = GroupOrderAppear(mActCat(:,1));
         
     lMainClass = 1;
@@ -1608,14 +1621,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     yBottomTable = 0.025;
     mMaxExtent = min(mTextPos(:,2));
-    yTableHeight = max([yBottom-abs(yHeight*mMaxExtent)-yBottomTable-0.005; 0.02*(size(mActCat,2)-1); 0.001]);
-    %get(plot2,'Position');
-    %[yBottomTable mMaxExtent yTableHeight]
-    %[hTabComponent hTabContainer]=GenerateGroupLabelsTable(hWindReturn,mActCat,3,[xLeft+(nO-1+0.5-.0025)/(n-0.5)*xWidth yBottomTable xWidth*(n-nO+0.25)/(n-0.5) yBottom-yBottomTable-0.035],'normalized',fontsize);
+    yTableHeight = max([yBottom-abs(yHeight*mMaxExtent)-yBottomTable-0.005; 0.02*(sum(fontsize-4-12+[1:size(mActCat,2)-1])); 0.001]);
     %position the table below the largest axis text label
-    %[xLeft+(nO-1+0.5-.0025)/(n-0.5)*xWidth yBottomTable xWidth*(n-nO+0.25)/(n-0.5) yTableHeight];
-    
-    [hTabComponent hTabContainer]=GenerateGroupLabelsTable(hWindReturn,mActCat,3,[xLeft+(nO-1+0.5-.0025)/(n-0.5)*xWidth yBottomTable xWidth*(n-nO+0.25)/(n-0.5) yTableHeight],'normalized',mColorFull,fontsize-4);
+    vTablePosition = [xLeft+(nO-1+0.5-.0025)/(n-0.5)*xWidth yBottomTable xWidth*(n-nO+0.25)/(n-0.5) yTableHeight];
+    lFieldExclude = 3;
+    [hTabComponent hTabContainer]=GenerateGroupLabelsTable(hWindReturn,mActCat,lFieldExclude,vTablePosition,'normalized',mColorFull,fontsize-4);
     
     hTextGroup = []; rDex = []; hGLines = [];
     
@@ -1629,11 +1639,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
        cPos = get(hTextGroup(i),'Position');
        %sprintf('%d %s %d %.2f\n',i,get(hTextGroup(i),'string'),cPos(1),cPos(2)) 
     end
-    
-    blShowPareto = 1;
-    
-    %nOpts = max(size(iOpt));
-    
+       
     %% Plot the groups
 
     if 1 %nU > 1
@@ -1761,13 +1767,13 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %Rebuild the variable argument list to pass along through the controls
     
 %    if strcmpi(AxisScales,'custom')
-        vararg_curr = {'hWind' hWindReturn 'tolerance' Tolerance 'SubSpaceError' SubSpaceError 'NumSamples' NumSamples 'vFixed' vFixed 'Precision' Precision 'vFixedVals' vFixedVals ...
+        vararg_curr = {'hWind' hWindReturn 'tolerance' Tolerance 'AllowableDeviation' AllowableDeviation 'NumSamples' NumSamples 'vFixed' vFixed 'Precision' Precision 'vFixedVals' vFixedVals ...
                 'vStep' vStep 'fontsize' fontsize 'NumTicks' NumTicks 'TickMag' TickMag 'mActCat' mActCat ...
-                'vGroup' vGroup 'mGroupData' mGroupData 'GroupToHighlight' iOpt 'SubSpaceGroup' SubSpaceGroup 'mColors' mColors 'mHighlightColor' mHighlightColor ...
+                'vGroup' vGroup 'mGroupData' mGroupData 'GroupToHighlight' iOpt 'mColors' mColors 'mHighlightColor' mHighlightColor ...
                 'AMat' AMat 'Brhs' Brhs 'cFunc' cFunc 'PlotPosition' PlotPosition 'PanelWidth' PanelWidth 'vObjLabels' vObjLabels ...
                 'vXLabels' vXLabels 'vXLabelsShort' vXLabelsShort 'yAxisLabels' yAxisLabels 'AxisScales' AxisScales 'BaseAxis' BaseAxis 'mLims' mLims ...
                 'TickSize' TickSize 'sGamsFile' sGamsFile 'StartTab' StartTab, 'GenerateType' GenType 'GenerateMethod' GenMethod ...
-                'HideSliders' HideSliders 'NearOptConstraint' NearOptConstraint 'OptSolRow' OptSolRow};
+                'HideSliders' HideSliders 'HideCheckboxes' HideCheckboxes 'NearOptConstraint' NearOptConstraint 'OptSolRow' OptSolRow};
 
          %Also set app variables for the functon inputs and computations
          setappdata(hWindReturn,'varargs',vararg_curr);
@@ -1794,7 +1800,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
    %Data menu with save data and load results options
    dMenu = uimenu('Label','Plot Data');
       uimenu(dMenu,'Label','Save data','Callback',{@SaveFig,hWindReturn},'Accelerator','D');
-      uimLoadData = uimenu(dMenu,'Label','Load results');
+      uimLoadData = uimenu(dMenu,'Label','Load results','Enable','off');
+      uimPrintToPDF = uimenu(dMenu,'Label','Print to PDF...','Callback',{@PrintToPDF,hWindReturn,mResults,nO});
    
    %Control menu with options to show/hide/set all the controls, sliders,
    %checkboxes, plot layers showing various categories of alternatives, coloring for values on objective function axes, and
@@ -1805,16 +1812,17 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
    uimShowAll = uimenu(cMenu,'Label','Hide all controls','Checked','off');
    uimSliders = uimenu(cMenu,'Label','Sliders','separator','on');
       uimHideSliders = uimenu(uimSliders,'Label','Hide sliders','Checked',Boolean2Enabled(HideSliders));
-      uimSetBeyond = uimenu(uimSliders,'Label','Set beyond extents');
+      uimSetBeyond = uimenu(uimSliders,'Label','Set beyond extents','Enable','off');
    uimCheckboxes = uimenu(cMenu,'Label','Axes checkboxes');
-      uimHideChecks = uimenu(uimCheckboxes,'Label','Hide checkboxes');
+      uimHideChecks = uimenu(uimCheckboxes,'Label','Hide checkboxes'); %'Checked',Boolean2Enabled(HideCheckboxes)); Don't set here. Later will trigger with callback
       uimCheckAll = uimenu(uimCheckboxes,'Label','Check all','Checked',Boolean2Enabled(AllValue));
    uimShowAlts = uimenu(cMenu,'Label','Alternatives'); 
       uimShowCurrRec = uimenu(uimShowAlts,'Label','Show current','Checked',Boolean2Enabled(lShowCurrRecord)); 
       uimShowFiltered = uimenu(uimShowAlts,'Label','Show filtered','Checked',Boolean2Enabled(lShowFiltered));       
-   uimShowObjsDiffColor = uimenu(cMenu,'Label','Contrast Colors for Objectives','enable',sEnableObjColors,'checked',Boolean2Enabled(lObjColorsVis));
-   uimGroupLabels = uimenu(cMenu,'Label','Show group labels'); %Don't set check value here; only later should lShowGroupLabels=1 and we trigger the event callback
-      
+   uimShowObjsDiffColor = uimenu(cMenu,'Label','Contrast Colors for Objectives','enable',sEnableObjColors,'checked',Boolean2Enabled(lObjColorsVis),'Separator','on');
+   uimGroupLabels = uimenu(cMenu,'Label','Show group labels','enable',lShowGroupLabelsEnable); %Don't set check value here; only later should lShowGroupLabels=1 and we trigger the event callback
+   uimShowInset =   uimenu(cMenu,'Label','Show inset plot','enable',Boolean2Enabled(nO==2)); %Don't set check value here; only later should ShowInset==1 and we trigger the event callback
+ 
    %Menu items to go directly to the tabs
    uimTab = zeros(length(ButtonText),1);
    for i=1:length(ButtonText)
@@ -1824,7 +1832,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
            uimTab(i) = uimenu(cMenu,'Label',ButtonText{i});
        end
    end
-           
+   
+   uimRefresh = uimenu(cMenu,'Label','Refresh display','Separator','on','Callback',{@ReorderGroups,mResults,nO,hWindReturn});
     %define a local fontsize for the controls
     fontsizecntls = min([fontsize-4 12]);
 
@@ -2064,7 +2073,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             % 'Callback', {@SetAllSliderVals,sSlider,txtSliderValue,mTransformToOrig,2,mPlot(OptGroupInds,:)}); %[150 lTopSlider-65 70 20]
 
     %Tool tips
-    sSubSpace = sprintf('Error is the fraction of a graph tick mark and used to define\n when a solution is within an error bound of the fixed solution\ndefined by checked axes and set values');
+    sAllowDeviation = sprintf('Is the fraction of a graph tick mark and used to define\n when an alternative is within the allowable deviation of a\nslider setting for a checked axis');
     
     %Label and Textbox for user to enter near-optimal tolerance if there is
     %only one
@@ -2080,9 +2089,9 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         
     end
     
-    lblSubSpaceError = uicontrol('Parent',hTabs(1),'Style', 'text','String','Subspace Error (fraction of tick):', 'Position', [10 lNearTopInteract-40 195 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
-    txtSubSpaceError = uicontrol('Parent',hTabs(1),'Style', 'edit','ToolTipString',sSubSpace, 'Position', [215 lNearTopInteract-40 45 20],'fontsize', fontsizecntls-2,'Callback',@TriggerSubSpaceUpdate);
-    set(txtSubSpaceError,'String',SubSpaceError);
+    lblAllowableDeviation = uicontrol('Parent',hTabs(1),'Style', 'text','String','Allowable deviation (fraction of tick):', 'Position', [45 lNearTopInteract-55 145 30],'fontsize', fontsizecntls-2,'BackgroundColor','white');
+    txtAllowableDeviation = uicontrol('Parent',hTabs(1),'Style', 'edit','ToolTipString',sAllowDeviation, 'Position', [215 lNearTopInteract-50 45 20],'fontsize', fontsizecntls-2,'Callback',@TriggerUpdateHighlightTraces);
+    set(txtAllowableDeviation,'String',AllowableDeviation);
     
 
     
@@ -2090,13 +2099,13 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     lTopGen = 90;
     GenerateType = 1;
     GenerateTypeLabel = uicontrol('Parent',GenSols,'Style', 'text','String','Type:','HorizontalAlignment','left', 'Position', [10 lTopGen 40 20],'fontsize', fontsizecntls-2,'BackgroundColor','white');
-    cbGenerateType = uicontrol('Parent',GenSols,'Style','popup','String','One solution|Maximum extents|Random sample|Enumerate all (MIPs)','Position',[50 lTopGen 125 25],'fontsize',fontsizecntls-2,'Value',GenerateType,'Callback',{@SetFromGenBoxes});
+    cbGenerateType = uicontrol('Parent',GenSols,'Style','popup','String','One solution|Maximum extents|Random sample|Enumerate all (MIPs)','Position',[59 lTopGen 125 25],'fontsize',fontsizecntls-2,'Value',GenerateType,'Callback',{@SetFromGenBoxes});
     set(cbGenerateType,'value',GenType);
     
-    GenerateMethodLabel = uicontrol('Parent',GenSols,'Style', 'text','String','Engine:','HorizontalAlignment','left','Position', [10 lTopGen-30 40 20],'fontsize', fontsizecntls-2,'BackgroundColor','white');   
+    GenerateMethodLabel = uicontrol('Parent',GenSols,'Style', 'text','String','Engine:','HorizontalAlignment','left','Position', [10 lTopGen-30 45 20],'fontsize', fontsizecntls-2,'BackgroundColor','white');   
        
     sUsingTip = sprintf('Data - Query data already on the plot\nMatlab - Run Matlab linprog function using constraint system defined by\n          the parameters AMat, Brhs, and (possibly) cFunc\nGAMS - Run the specified GAMS file'); 
-    cbGenerateMethod = uicontrol('Parent',GenSols,'Style','popup','ToolTipString',sUsingTip,'String','Data|MATLAB (LP matrix)|GAMS','Position',[50 lTopGen-30 125 25],'fontsize',fontsizecntls-2,'Value',GenMethod,'Callback',{@SetFromGenBoxes});
+    cbGenerateMethod = uicontrol('Parent',GenSols,'Style','popup','ToolTipString',sUsingTip,'String','Data|MATLAB (LP matrix)|GAMS','Position',[59 lTopGen-30 125 25],'fontsize',fontsizecntls-2,'Value',GenMethod,'Callback',{@SetFromGenBoxes});
  
     
     lblNumSamples = uicontrol('Parent',GenSols,'Style', 'text','String','# Samples:', 'Position', [10 lTopGen-55 75 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
@@ -2114,7 +2123,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 
     sGenSolsTip = sprintf('Generate new alternatives from the specifiednear-optimal tolerance\nand existing filtered alternatives');   
     GenerateButton = uicontrol('Parent',GenSols,'Style', 'pushbutton', 'String', 'Generate','ToolTipString',sGenSolsTip,...
-            'Position', [185 lTopGen-25 75 40],'fontsize', fontsizecntls);
+            'Position', [189 lTopGen-25 75 40],'fontsize', fontsizecntls);
  
         
     
@@ -2236,18 +2245,18 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     FarLeftButton = uicontrol('Parent',MoveAxesPanel,'Style', 'pushbutton', 'ToolTipString',sFarLeft,'String', '<<',...
             'Position', [125 lTopMoveAxis-6.75*20+15 20 20],'fontsize', fontsizecntls);
-         %   'Callback', {@MoveAxis,mResults, nO, 1, -1,NearOptTolerance,txtSubSpaceError,cbChecks, sSlider,mTransformToOrig,vararg_out{:}});
+         %   'Callback', {@MoveAxis,mResults, nO, 1, -1,NearOptTolerance,txtAllowableDeviation,cbChecks, sSlider,mTransformToOrig,vararg_out{:}});
         %     'Callback', {@MoveAxis,hWindReturn,mResults, nO, 1, -1,NearOptTolerance, cbChecks, vFixedVals, vStep, sSlider,vObjLabels,vXLabels, vXLabelsShort, yAxisLabels, fontsize, iOpt, mActCat, vGroup});
  
     LeftButton = uicontrol('Parent',MoveAxesPanel,'Style', 'pushbutton', 'ToolTipString',sLeft,'String', '<',...
             'Position', [145 lTopMoveAxis-6.75*20+15 20 20],'fontsize', fontsizecntls);
-        %    'Callback', {@MoveAxis,mResults,nO, 0, -1,NearOptTolerance,txtSubSpaceError, cbChecks,sSlider,mTransformToOrig,vararg_out{:}});
+        %    'Callback', {@MoveAxis,mResults,nO, 0, -1,NearOptTolerance,txtAllowableDeviation, cbChecks,sSlider,mTransformToOrig,vararg_out{:}});
     RightButton = uicontrol('Parent',MoveAxesPanel,'Style', 'pushbutton', 'ToolTipString',sRight,'String', '>',...
             'Position', [165 lTopMoveAxis-6.75*20+15 20 20],'fontsize', fontsizecntls);
-         %   'Callback', {@MoveAxis,mResults,nO, 0, 1,NearOptTolerance,txtSubSpaceError, cbChecks,sSlider,mTransformToOrig,vararg_out{:}});
+         %   'Callback', {@MoveAxis,mResults,nO, 0, 1,NearOptTolerance,txtAllowableDeviation, cbChecks,sSlider,mTransformToOrig,vararg_out{:}});
     FarRightButton = uicontrol('Parent',MoveAxesPanel,'Style', 'pushbutton','ToolTipString',sFarRight, 'String', '>>',...
             'Position', [185 lTopMoveAxis-6.75*20+15 20 20],'fontsize', fontsizecntls);
-         %   'Callback', {@MoveAxis,mResults,nO, 1, 1,NearOptTolerance,txtSubSpaceError, cbChecks,sSlider,mTransformToOrig,vararg_out{:}});
+         %   'Callback', {@MoveAxis,mResults,nO, 1, 1,NearOptTolerance,txtAllowableDeviation, cbChecks,sSlider,mTransformToOrig,vararg_out{:}});
 
          
    %checkbox that determines how axes are re-ordered
@@ -2273,7 +2282,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         
     %Button to reorder decision variables
     PruneButton = uicontrol('Parent',MoveAxesPanel,'Style', 'pushbutton','ToolTipString','Remove selected axes', ...  %'HorizontalAlignment','center',
-            'Position', [15 lTopMoveAxis-12*20 70 50],'fontsize', fontsizecntls); %set the callback function after define SubSpaceError
+            'Position', [15 lTopMoveAxis-12*20 70 50],'fontsize', fontsizecntls); %set the callback function after define AllowableDeviation
         
     %Wrap the text in PruneButton
     cText = {'Delete axes'};
@@ -2284,7 +2293,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     cbPruneChecked = uicontrol('Parent',MoveAxesPanel,'Style', 'checkbox', 'String', 'Checked','Position',[90 lTopMoveAxis-11*20+5 145 20],'fontsize', fontsizecntls);
     cbPruneZeros = uicontrol('Parent',MoveAxesPanel,'Style', 'checkbox', 'String', 'All zero','Position',[90 lTopMoveAxis-12*20+5 145 20],'fontsize', fontsizecntls);%    
 
-    
+    GroupTracesPanel = 0;
 
     %Trace Group checkboxes to toggle their visibility
     if nU>0
@@ -2363,15 +2372,15 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %Build a cell array of handles to the controls we'll need to query in
     %callback functions. Organize by single-value text Box inputs, Axis
     %inputs, Group inputs, and other UI settings.
-    control_handles = {'Tolerance' NearOptTolerance 'SubSpaceError' txtSubSpaceError 'NumSamples' txtNumSamples ...
+    control_handles = {'Tolerance' NearOptTolerance 'AllowableDeviation' txtAllowableDeviation 'NumSamples' txtNumSamples ...
                         'Tabs' hTabs 'AxisChecked' cbChecks 'Sliders' sSlider 'txtSliderValue' txtSliderValue ...
                         'GroupChecks' cbGroupChecks 'GroupOrders' txtGroupOrders 'GroupNames' txtGroupNames 'GroupThicks' txtGroupThicks  ...
-                        'HideSliders' uimHideSliders 'ByCat' cbByCat 'Reorder' cbReorder 'PruneChecked' cbPruneChecked ...
+                        'HideSliders' uimHideSliders 'HideCheckboxes' uimHideChecks 'ByCat' cbByCat 'Reorder' cbReorder 'PruneChecked' cbPruneChecked ...
                         'PruneZeros' cbPruneZeros 'AllGroupsSameColor' cbGroupsOneColor 'HighlightGroup' cbHighlightGroup 'GamsFile' txtGamsFile ...
                         'ColorRamp' cbRampColor 'RampDirection' cbDirection 'NumClasses' txtNumClasses 'cbGenType' cbGenerateType 'cbGenMethod' cbGenerateMethod ...
                         'CurrentRecord' txtCurrRec 'TotalRecords' lblOfX 'GroupToHightlightBut' GroupToHighlightButton 'HideControls' uimShowAll ...
                         'txtFontSize' txtFontSize 'ShowCurrRecord' uimShowCurrRec 'ShowFilteredAlts' uimShowFiltered, 'ShowObjsDiffColor' uimShowObjsDiffColor...
-                        'ShowGroupLabels' uimGroupLabels}; 
+                        'ShowGroupLabels' uimGroupLabels,'ShowInsetPlot',uimShowInset}; 
 
     %Also set as an app variable
     setappdata(hWindReturn,'hControls',control_handles);                
@@ -2382,7 +2391,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     set(FarRightButton,'Callback', {@RearrangeAxes,1,1,hWindReturn,mResults,nO});
     
     set(PruneButton,'Callback', {@RearrangeAxes,0,0,hWindReturn,mResults,nO});
-    %set(ResampleButton,'Callback',{@Resample,NearOptTolerance,txtSubSpaceError,txtNumSamples,cbGroupChecks,cbChecks,sSlider,mTransformToOrig,mResults,nO,hWindReturn});
+    %set(ResampleButton,'Callback',{@Resample,NearOptTolerance,txtAllowableDeviation,txtNumSamples,cbGroupChecks,cbChecks,sSlider,mTransformToOrig,mResults,nO,hWindReturn});
     %set(ResampleButton,'Callback',{@Resample,hWindReturn,control_handles,mTransformToOrig,mResults,nO});
     %set(RunGamsButton,'Callback',{@EnumerateWithGams,hWindReturn,control_handles,mTransformToOrig,mResults,nO});
     set(GenerateButton,'Callback',{@GenerateNewSols,hWindReturn,mTransformToOrig,mResults,nO});
@@ -2398,20 +2407,20 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
    %set(uimLoadData,'Callback',{@RunButton,mResults,nO,NearOptTolerance,cbChecks,sSlider,mTransformToOrig,0,vararg_curr{:}});
    set(uimLoadData,'Callback',{@TestAllRegion,hWindReturn,mResults,nO,0});
    set(uimShowAll,'Callback',{@ShowAllControls,ControlFrame,[plot2 ax2],cbChecks,sSlider,hTabContainer,xPanelWidthNorm+rMarginPanel});  
-     set(uimHideSliders,'Callback',{@ToggleCurrMenuItem}); %{@callHideSliders,sSlider});
+     set(uimHideSliders,'Callback',{@ToggleSliders}); %{@callHideSliders,sSlider});
      set(uimSetBeyond,'Callback',{@ToggleMenuItem});
      set(uimCheckAll,'Callback',{@CheckAllBoxes,cbChecks})
-     set(uimHideChecks,'Callback',{@HideCheckboxes,cbChecks,hTexts,hTabContainer,ymin-6*(ymax-ymin)/100,ymin-2*(ymax-ymin)/100,0.025,'normalized'});
+     set(uimHideChecks,'Callback',{@ToggleCheckBoxVisibility,cbChecks,hTexts,hTabContainer});
    set(uimGroupLabels,'Callback',{@GroupDecisionLabels,hTexts,hTabContainer,nO,plot2});
      set(uimShowCurrRec,'Callback',{@ToggleCurrMenuItem});
      set(uimShowFiltered,'Callback',{@ToggleCurrMenuItem});
      set(uimShowObjsDiffColor,'Callback',{@ToggleShowObjs});
-   
+     set(uimShowInset,'Callback',{@ToggleInset});
    for i=1:length(uimTab)
        set(uimTab(i),'Callback',{@ShowTab,i,hTabs,hTabButtons,get(hTabButtons(2),'BackgroundColor')});
    end
 
-    %set(PruneButton,'Callback', {@Prune,NearOptTolerance,txtSubSpaceError,cbChecks,sSlider,mTransformToOrig,cbPruneChecked,cbPruneZeros,mResults,nO,vararg_out{:}});        % Pushbutton string callback
+    %set(PruneButton,'Callback', {@Prune,NearOptTolerance,txtAllowableDeviation,cbChecks,sSlider,mTransformToOrig,cbPruneChecked,cbPruneZeros,mResults,nO,vararg_out{:}});        % Pushbutton string callback
     %Old version        'Callback', {@Prune,hWindReturn,mResults, nO,NearOptTolerance, cbChecks, vFixedVals, vStep, sSlider,vObjLabels,vXLabels, vXLabelsShort, yAxisLabels, fontsize, iOpt, mActCat,vGroup, cbPruneChecked, cbPruneZeros});        % Pushbutton string callback
     
     
@@ -2425,23 +2434,16 @@ set(hTexts,'Units','normalized');
 for i=1:3
     set(get(hTabs(i),'Children'),'Units','normalized');
 end
-set(get(GenSols,'Children'),'Units','normalized');
-set(get(FiltSols,'Children'),'Units','normalized');
-set(get(MoveAxesPanel,'Children'),'Units','normalized');
-set(get(GroupTracesPanel,'Children'),'Units','normalized');
-
-if lShowGroupLabels == 1 %Trigger the function to show the table
-    GroupDecisionLabels(uimGroupLabels,0,hTexts,hTabContainer,nO,plot2)
-end
-if ShowControls == 0 %Trigger the function to hide the controls   
-    ShowAllControls(uimShowAll,0,ControlFrame,[plot2 ax2],cbChecks,sSlider,hTabContainer,xPanelWidthNorm+rMarginPanel);
+hPanels = [GenSols FiltSols MoveAxesPanel GroupTracesPanel FormatPanel];
+for i=1:length(hPanels)
+    set(hPanels(i),'Units','normalized');
+    set(get(hPanels(i),'Children'),'Units','normalized');
 end
 
-%% Callback functions for mouse events
+%% Data for the mouse event callback functions
 
 %Create a dummy over- parallel coordinate plot to highlight mouse-overed
 %solutions
-
 % Find out which groups are checked
 gDexes = GetAllChecked(cbGroupChecks);
 
@@ -2459,92 +2461,45 @@ end
 
 textHdl = text('Color', 'black', 'VerticalAlign', 'Bottom');
 
+%Trigger callbacks for menu item settings that were passed as input
+%arguements to the plot
+if lShowGroupLabels == 1 %Trigger the function to show the table
+    GroupDecisionLabels(uimGroupLabels,0,hTexts,hTabContainer,nO,plot2)
+else %Just update the table position
+    PositionGroupLabelsTable(hTabContainer, nO, hTexts, plot2)
+end
+if ShowControls == 0 %Trigger the function to hide the controls   
+    ShowAllControls(uimShowAll,0,ControlFrame,[plot2 ax2],cbChecks,sSlider,hTabContainer,xPanelWidthNorm+rMarginPanel);
+end
+if HideSliders==0
+   UpdateHighlightedTraces;
+elseif HideCheckboxes==1
+   ToggleCheckBoxVisibility(uimHideChecks,0,cbChecks,hTexts,hTabContainer)
+end
+    
+%Create the cartesian inset graph
+if nO==2
+    [hInsetPlot,hBackBox] = LaunchInset(hWindReturn);
+    if ShowInsetPlot
+        ToggleInset(uimShowInset,0);
+    end
+end
+
+
+%% Callback functions for mouse events
+
 %Set the mouse call backs for moving the mouse and clicking to fix a value
 set(hWindReturn,'WindowButtonMotionFcn', @MouseHoverCallback);
 set(hWindReturn,'WindowButtonDownFcn', @MouseButtonDownCallback);
-set(hWindReturn,'ResizeFcn',@ResizeCallback);
-
-
-%% Adding a Pareto inset plot
-% 
-% If there are pareto points and there are two objective, plot an inset x-y graph of them in standard
-% cartesian coordinates in the upper left corner
-
-if blShowPareto && (nO==2)
-   %Grab axis info from base plot 
-   YLimsInset = get(plot2,'ylim');
-   YTickInset = get(plot2,'ytick');
-   YTicklabelInset = get(plot2,'yticklabel');
-   
-   YLimsInset(1) = 4000;
-   YTickInset = YTickInset(2:end);
-   YTicklabelInset = YTicklabelInset(2:end);
-   
-   %Start the limits and ticks a bit higher
-    
-   hold off
-   %first calculate where the inset figure should go and draw a box there.
-   main_fig = findobj(hWindReturn,'Type','axes');
-   ax=cell2mat(get(main_fig,'Position'));
-   inset_size = 0.2;
-   InnerPos = [ax(1,1)+0.65*ax(1,3) ax(1,2)+ax(1,4)-0.65*inset_size 0.82*inset_size 0.75*inset_size]; %0.8
-  
-   %FigureInset = figure('Color',[0.8 0.8 0.8]); 
-   FigureInset = figure;
-   
-   plot1 = subplot(1,1,1,'FontSize',fontsize-4,'Parent',FigureInset,'box','on');
-   hold on
-   
-   cMarkers = {'.' 'o' '+' '^' 's' 's' 's' 's'};
-   vSize = fontsize -12;
-   %Plot each checked group in a separate color that corresponds to it's
-   %renderings on the full parallel coordinate plot
-   hParetoPlots = zeros(nU);
-   for i=1:nU
-       %Pull in the data for the group
-       rToUse = strcmpi(vGroup,vUnique(i)); %Rows for the current group 
-       %Pull in the renderings (particularly color) for the group
-       [lIndToUse,lLineWidth,mColorsDecs,mColorsObjs,strVis,cMarker] = GetGroupRenderings(i,cMarkers);
-
-       %Plot units for first axis (y) and data units for second axis (x)!!!
-       %makes the labeling of ticks easier
-       hParetoPlots(i) = plot(plot1, mResults(rToUse,2),mPlot(rToUse,1),'marker',cMarker,'MarkerSize',vSize,'color',mColorsDecs,'markerfacecolor',mColorsDecs,'linestyle','none','visible',strVis);
-        %plot(plot1, mGroupSave(:,1),mGroupSave(:,2),'marker','x','MarkerSize',fontsize-4,'color',mColorsObjsGroup(2,:),'linestyle','none')
-   end
-   
-   %Use the prior axis label, but break it at the (units)
-   [cFir cSec] = strsplit(AxisLabelsNew{1},'(');
-   set(plot1,'fontsize',fontsize-6,'ycolor',[.737 0 0.737],'xcolor',[.737 0 0.737],'Ylim',YLimsInset,'ytick',YTickInset,'yticklabel',YTicklabelInset,'Xlim',[8000 15000],'Xtick',[8000:2000:15000],'Xticklabel',[8:2:15]);
-   ylabel(sprintf('%s\n(%s',cFir{1},cFir{2}),'FontSize',fontsize-2,'color',[.737 0 0.737]);
-   [cFir cSec] = strsplit(sLabel{2},'(');
-   xlabel(sprintf('%s(10^%d %s',cFir{1},3,cFir{2}),'FontSize',fontsize-2,'color',[.737 0 0.737]);
-   %whitebg(FigureInset,[0.8 0.8 0.8]);
-   %Inset the figure
-   %inset(Figure2,FigureInset,0.25);
-     
-   inset_fig = findobj(FigureInset,'Type','axes');
-   h_inset = copyobj(inset_fig,hWindReturn);
-   set(h_inset,'box','on');
-   set(h_inset,'Position', InnerPos);
-   
-   %Create a blank box to go behidnd the incoming figure
-   vOuterPos = get(h_inset,'OuterPosition');    
-   hBackBox = annotation(hWindReturn,'rectangle',vOuterPos,'FaceColor',[0.8 0.8 0.8]);
-   drawnow; pause(0.1); %let the gui catch up
-   uistack(h_inset,'top');
-   %outer_pos = get(h_inset,'OuterPosition');
-   %rect = rectangle('Position',InnerPos,'EdgeColor',[0 0 0],'FaceColor',[0.8 0.8 0.8]);
-   
-   close(FigureInset);   
-end
+set(hWindReturn,'ResizeFcn',@ResizeCallback);  
 
 %% The Mouse Call back functions
 
     function ResizeCallback(src,evt)
         %Callback when the figure is resized. Grab the current data and
-        %control settings and replot the figure (to update the positioning)
-       
-        ReorderGroups(0,0,mResults,nO,hWindReturn);
+        %control settings and replot the figure (to update the positioning)      
+        %ReorderGroups(0,0,mResults,nO,hWindReturn);
+        PositionGroupLabelsTable(hTabContainer, nO, hTexts, plot2)
     end
 
    function MouseButtonDownCallback(src,evt)
@@ -2652,17 +2607,17 @@ end
 
         %Read in the variable arguments
         %[vFixedVals vGroup] = aGetField(varargin,{'vFixedVals' 'vGroup'}); 
-        % Read in the SubSpaceErrorVal
+        % Read in the AllowableDeviationVal
         if ShowControls==1
-            [SubSpaceErrorVal, SubSpaceErrorValPU] = GetCheckSubSpaceError(txtSubSpaceError,'MouseMove',TickSize);
+            [AllowableDeviationVal, AllowableDeviationValPU] = GetCheckAllowableDeviation(txtAllowableDeviation,'MouseMove',TickSize);
 
             %Find the rows of mResults that are checked and fixed
-            [cRows] = ReturnRows(vGroup,OrderedGroups(gDexes),SubSpaceErrorValPU,mResults,cbChecks,vFixedVals,sSlider,mTransformToOrig);
+            [cRows] = ReturnRows(vGroup,OrderedGroups(gDexes),AllowableDeviationValPU,mResults,cbChecks,vFixedVals,sSlider,mTransformToOrig);
             %ErrorTolPU = ConvertPlot2DataUnits(ErrorTolDU,mTransformToOrig(:,cI),1);
 
             %Search along the cI-th column of mResults to find values that within
             %the ErrorTol of the y-mouse position
-            RowsToHighLight=cRows(abs(mPlot(cRows,cI)-mouseY) <= SubSpaceErrorValPU);
+            RowsToHighLight=cRows(abs(mPlot(cRows,cI)-mouseY) <= AllowableDeviationValPU);
         else
             RowsToHighLight=[];
         end
@@ -2747,7 +2702,7 @@ end
         elseif (lHideSliderValue==0) && (LimitSource==2)       
             %Sliders visible, query min and max values using linear constraints defined in
             %AMat and brhs. Use maximum extent functions
-            [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValue,Aeq,Beq] = UpdateLPMatrix(hWindReturn,nO,1);
+            [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue,Aeq,Beq] = UpdateLPMatrix(hWindReturn,nO,1);
             [mResultsValUse,mResCompact] = maxextentind(AMatNew,BrhsNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1)); %'Aeq',Aeq,'Beq',Beq,
             
             if any(isnan(mResultsValUse))
@@ -2982,14 +2937,35 @@ end
         end
     end
 
-    function HideCheckboxes(hind,event,cbChecks,hTexts,hTabContainer,yPosUnchecked,yPosChecked,yPosGroupOffset, yPosGroupOffsetUnits)
-        %when checked, hides all the checkboxes below the axes and moves the
+    function ToggleCheckBoxVisibility(hind,event,cbChecks,hTexts,hTabContainer)
+        %when hind is checked, hides all the checkboxes below the axes and moves the
         %axis text labels up to the yPosChecked value.
 
         %When unchecked, makes the checkboxes visible and returns the text
         %labels to the yPosUnchecked value
 
         %Similarly shifts the GroupTable
+        
+        % INPUTS
+        %  hind = handle to the menu item that controls this function
+        %  cbChecks = vector of handles to the checkbox controls
+        %  hTexts = vector of handles to the text labels thta sit under the
+        %       checkboxes
+        %  hTabContainer = handle of the container which holds the table
+        %       for grouping axes labels
+        
+        %If sliders are on, can not hide checkboxes      
+        if (Enabled2Boolean(get(hind,'Checked'))==0) &&  (Enabled2Boolean(get(uimHideSliders,'Checked'))==0)
+            %Turn on the checks
+            sResponse = questdlg('Sliders are visible. Can not hide checkboxes. Hide both?','How to proceed','Yes','Cancel','Cancel');
+            
+            if strcmpi(sResponse,'Yes')
+                %turn off the slideers
+                ToggleCurrMenuItem(uimHideSliders,0);
+            else %don't do anything
+                return
+            end
+        end
 
         sValue = ToggleMenuItem(hind,0);%get(hind,'Value');
         set(cbChecks(1),'Units','Characters');
@@ -3027,6 +3003,68 @@ end
         vPos(2) = vPos(2) + yChange;
         set(hTabContainer,'Position',vPos);
         set(hTabContainer,'Units',tUnits);
+    end
+
+    function ShowAllControls(hind,event,cFrame,hAxes,cChecks,sSlides,hTabContainer,xWidthAddWOControls)
+        %Toggles the visibility of all the controls
+        %if off, then control frame is off
+        %if on, then main on and slider frame returned to prior value
+        %also adjusts the width of the main plot and the positions of the
+        %checkboxes and slider controls (on the graph)
+
+        vPos = get(hAxes(1),'Position');
+        xLeft = vPos(1);
+        yBottom = vPos(2);
+        xWidth = vPos(3);
+        yHeight = vPos(4);
+
+        nAxes = max(size(hAxes));
+        nControls = max(size(cChecks));
+        nSlides = max(size(sSlides));
+        %nLines = max(size(hLines));
+
+        xWidthOld = xWidth;
+
+        %Turn the uimenu (hind) to the opposite of what it currently is
+        strVis = get(hind,'Checked');
+        cCheckedSet = Boolean2Enabled(ToggleMenuItem(hind,event));
+
+        if strcmpi(cCheckedSet,'on') %cVal==0 %make all the frames invisible                 
+            xWidth = xWidth + xWidthAddWOControls; 
+        else
+            xWidth = xWidth - xWidthAddWOControls;
+        end
+
+        set(cFrame,'Visible',strVis);
+
+        %set visibility on all the children panels and their controls
+        SetVisibilityAll(cFrame,strVis);
+
+        %position the plot areas
+        for i=1:nAxes
+            set(hAxes(i),'Position',[xLeft yBottom xWidth yHeight]);
+        end
+
+        %position the checkbox and slider controls (on the graph)
+        vCheckPos = get(cChecks(1),'Position');
+
+        for i=1:nControls
+            vCheckPos(1)=xLeft+(i-1)*xWidth/(nControls-0.5)-0.005;
+
+            set(cChecks(i),'Position',vCheckPos);
+            if sSlides(i)~=0
+                vSliderPos = get(sSlides(i),'Position');
+                vSliderPos(1)=xLeft+(i-1)*xWidth/(nSlides-0.5)-0.005;
+                set(sSlides(i),'Position',vSliderPos);
+            end
+        end
+
+        PositionGroupLabelsTable(hTabContainer, nO, hTexts, hAxes(1));
+
+        %xPosTable = get(hTabContainer,'Position');
+        %xPosTable(3) = xWidth*(nControls-0.5)/(nControls-1+0.5);
+        %set(hTabContainer,'Position',xPosTable);
+
     end
 
     function HideCheckboxesOld(hind,event,cbChecks,hTexts,hTabContainer,yPosUnchecked,yPosChecked,yPosGroupOffset, yPosGroupOffsetUnits)
@@ -3111,10 +3149,22 @@ end
         UpdateHighlightedTraces
     end
 
+    function ToggleSliders(hind,event)
+        % Handler for when the slider menu item is selected
+        % If going to show sliders, we also need to show the axis checkboxes
+        if (Enabled2Boolean(get(hind,'Checked'))==1) &&  (Enabled2Boolean(get(uimHideChecks,'Checked'))==1)
+            %Turn on the checks
+            ToggleCheckBoxVisibility(uimHideChecks,0,cbChecks,hTexts,hTabContainer);
+        end
+        
+        ToggleCurrMenuItem(hind,event);
+    end
+
     function ToggleCurrMenuItem(hind,event)
         % toggles whether to show the trace for the current selected record
         % and highlighted records
         cVal = ToggleMenuItem(hind); %cVal = get(hind,'value');
+        
         UpdateHighlightedTraces;
     end
 
@@ -3123,58 +3173,67 @@ end
         % different color
         cVal = ToggleMenuItem(hind); %cVal = get(hind,'value');
         ShowGroups(0,0,hWindReturn,2);
-    end
+   end
 
     function GroupDecisionLabels(hind,event,hTexts,hTabContainer, nO, hAxis)
-        % toggles showing the decision variable axes labels in group mode with the
-        % table of hTabContainer (checked)
+        % toggles the turning on/off the hTabContainer which contains the
+        % axis labels in a grouped html table
         %
-        % hTexts are the handles to the text labels in list mode
+        % hTexts are the handles to the individual axis labels that appear
+        %   below the axis
         % hTabContainer is the handle to the java element showing the table of
-        % grouped decision variables
-
-        % nO is an offset for the first nO elements of hTexts to leave on
-        % regardless of the toggle (i.e., labels for the objective functions) 
-
-        % hAxis is handle to the axis to which the Text Labels refer
+        %   grouped decision variables
+        % nO is an offset for the first nO elements of hTexts to position the left side the table container 
+        % hAxis is handle to the axis to which the Text Labels are
+        %   associated
 
         % also recalculates the position for the hTabContainer table just below
         % the hTexts
 
         cVal = ToggleMenuItem(hind); %cVal = get(hind,'value');
-        cText= max(size(hTexts));
-        %cGroup=max(size(hTextGroup));
-        %cLines=max(size(hLines));
-
-        if cVal==0 %make the hTexts visible and groups invisible
-            sText = 'on';
-            gText = 'off';
-        else %keep the hTexts visible and make the groups visible
-            sText = 'on';
-            gText = 'on';
-        end
-
-        %mTextExtent = zeros(cText,4);
-        mTextPos = zeros(cText,3);
-
-        for i=nO+1:cText
-            set(hTexts(i),'Visible',sText);
-            %strCurrUnits = get(hTexts(i),'Units');
-           % set(hTexts(i),'Units','normalized');
-           % mTextExtent(i,:) = get(hTexts(i),'Extent');
-            mTextPos(i,:) = get(hTexts(i),'Position');
-            %set(hTexts(i),'Units',strCurrUnits);
-        end
-
-        yBottomTable = 0.025;
-        aPosition = get(hAxis,'Position');
-        yHeight = aPosition(4);
-        yBottom = aPosition(2);
-
-        %mMaxExtent = min(mTextExtent(nO+1:cText,2));
-        mMaxPos = min(mTextPos(nO+1:cText,2));
-
+        gText = Boolean2Enabled(cVal);
+        
+        %Recalculate and set the tables position
+        PositionGroupLabelsTable(hTabContainer,nO,hTexts,hAxis);
+       
         set(hTabContainer,'Visible',gText);
+    end
+
+    function [vTablePosition] = PositionGroupLabelsTable(hTabContainer, nO, hTexts, hAxis)
+        % Position the hTabContainer based on the current location of the
+        % axis and text labels. This position is:
+        %   Left: nO+1 axis
+        %   Bottom: Below the bottom of the hTexts
+        %
+        % hTexts are the handles to the individual axis labels that appear
+        %   below the axis
+        % hTabContainer is the handle to the java element showing the table of
+        %   grouped decision variables
+        % nO is an offset for the first nO elements of hTexts to position the left side the table container 
+        % hAxis is handle to the axis to which the Text Labels are
+        %   associated
+        % OUTPUTS
+        %   vTablePosition = the newly calculated position vector for the hTabContainer
+
+        % Get the extents of the texts
+        mTextExtent = cell2mat(get(hTexts(nO+1:end),'Extent'));
+        mMaxExtent = min(mTextExtent(:,2)); %Read the minimum bottom extent (lowest)
+        %Remember, text extents are relative to the axis, the Table is
+        %relative to the figure!
+        
+        %Now work from the axis position
+        aPosition = get(hAxis,'Position');
+        xLeftTab = aPosition(1)+(nO-1+0.5-.0025)/(n-0.5)*aPosition(3);
+        xWidthTab = aPosition(3)*(n-nO+0.25)/(n-0.5);
+        vTabPosCur = get(hTabContainer,'Position');
+        TabFontSizes = fontsize-4-12+1+[1:lFieldExclude-1];
+        lTabHeight = sum(TabFontSizes/TabFontSizes(1));
+        yHeightTab = lTabHeight*0.0525; %0.07 if a row wraps in the table
+        
+        yBottomTab = max([aPosition(2)*(1-abs(mMaxExtent)) - yHeightTab - 0.02]);      %0.025     
+        %position the table below the largest axis text label
+        vTablePosition = [xLeftTab yBottomTab xWidthTab yHeightTab];       
+        set(hTabContainer,'Position',vTablePosition);
     end
 
     function [vSlidersOut,vShowSlider] = RenderSliders(vMins,vMaxes,vFixedValsPU,vSliderStep,vSliders,Indexes,TotalInds) 
@@ -3242,8 +3301,9 @@ end
                 vSlidersOut(i) = uicontrol('Style','slider');
             end
             
-            if lHideSliderValue==1
-                %The checkbox value overrules everything else.
+            if (lHideSliderValue==1) || (nargin<5) 
+                %The checkbox value overrules everything else. Also, don't
+                %show if initially creating
                 sVis = 'off';
             end
             
@@ -3309,7 +3369,7 @@ end
          UpdateHighlightedTraces
     end
 
-    function TriggerSubSpaceUpdate(hind,event)
+    function TriggerUpdateHighlightTraces(hind,event)
         UpdateHighlightedTraces
     end
 
@@ -3444,7 +3504,8 @@ end
            end
            
            %Find the Axis and number of color classes
-           [sFirst,lFirst] = GetFirst(cbChecks, {vObjLabels{:} vXLabels{:}}, 1);
+           %[sFirst,lFirst] = GetFirst(cbChecks, {vObjLabels{:} vXLabels{:}}, 1);
+           [sFirst,lFirst] = GetFirst(cbChecks, get(hTexts,'string'), 1);
 
            %Read in the number of color classes
            lNumClasses = str2num(get(txtNumClasses,'string'));
@@ -3622,8 +3683,8 @@ end
                end
             end
         end
-        
-        UpdateSetToControls(0,0,hWindCurr,0,0);        
+        UpdateSetToControls(0,0,hWindCurr,0,0); 
+        UpdateInset;
     end
 
     function UpdateSetToControls(hind,but,hWindCurr,direction,magnitude)
@@ -3700,6 +3761,148 @@ end
        end
     end
 
+    %Handlers for the Cartesian Inset plot
+    % 
+    function [hInsetPlotLocal,hBackBoxLocal] = LaunchInset(hWindMain)
+        %Create a hidden axes and back plot
+        %hWindMain = handle to the main Plot window
+        %fontsizeMain = fontsize of the main window
+        hInsetPlotLocal = axes('Parent',hWindMain,'box','on','visible','off');
+        hBackBoxLocal = annotation(hWindMain,'rectangle','FaceColor',[0.8 0.8 0.8],'visible','off');
+    end
+
+    function ToggleInset(hInd,event)
+        cVal = ToggleMenuItem(hInd);
+        if cVal==1
+            %Show the Pareto Plot
+            UpdateInset;
+        else
+            %Hide the objective
+            set([hInsetPlot hBackBox],'Visible','off');
+            set(get(hInsetPlot,'Children'),'Visible','off');
+        end 
+    end
+
+    function UpdateInset
+       %Reposition the inset cartesian plot, update traces on it, and make
+       %the ticks look nice
+       
+       %Check conditions are correct to proceed       
+       if (nO~=2) || (strcmpi(get(uimShowInset,'Checked'),'off'))
+           return;
+       end
+       
+       hold off
+       %main_fig = findobj(hWindReturn,'Type','axes');
+       %ax=cell2mat(get(main_fig,'Position'));
+       ax = get(plot2,'Position');
+       
+       inset_size = 0.2;
+       InnerPos = [ax(1,1)+0.65*ax(1,3) ax(1,2)+ax(1,4)-0.65*inset_size 0.82*inset_size 0.75*inset_size]; %0.8
+
+       set(hInsetPlot,'Position',InnerPos,'fontsize',fontsize-4);
+       delete(get(hInsetPlot,'Children'));
+       hold on
+
+       cMarkers = {'.' 'o' '+' '^' 's' 's' 's' 's'};
+       vSize = fontsize -12;
+       %Plot each checked group in a separate color that corresponds to it's
+       %renderings on the full parallel coordinate plot
+       hParetoPlots = zeros(nU,1);
+       for i=1:nU
+           %Pull in the data for the group
+           rToUse = strcmpi(vGroup,vUnique(i)); %Rows for the current group 
+           %Pull in the renderings (particularly color) for the group
+           [lIndToUse,lLineWidth,mColorsDecs,mColorsObjs,strVis,cMarker] = GetGroupRenderings(i,cMarkers);
+           strVis = Boolean2Enabled(get(cbGroupChecks(i),'Value'));
+
+           %Also plotted in plot units!
+           hParetoPlots(i) = plot(hInsetPlot, mPlot(rToUse,2),mPlot(rToUse,1),'marker',cMarker,'MarkerSize',vSize,'color',mColorsDecs,'markerfacecolor',mColorsDecs,'linestyle','none','visible',strVis);
+       end
+
+       %Use the original axis labels, but break at the (units)
+       cAxisLabels = vObjLabels;
+
+       set(hInsetPlot,'fontsize',fontsize-6,'ycolor',[.737 0 0.737],'xcolor',[.737 0 0.737]); 
+       cAxisProps = {'YLim', 'YTick', 'YTickLabel';'XLim', 'XTick', 'XTickLabel'};
+       %Grab axis info from the left axis of the main plot 
+       TicksAllUse = get(plot2,cAxisProps(1,:));
+
+       %Format the tick labels on each axis
+       for i=1:size(cAxisProps,1)       
+           if (i==BaseAxis(1)) || ((vMults(i)==vMults(BaseAxis(1))) && all(mTransformToOrig(:,1) - mTransformToOrig(:,2) <= [1e-6;1e-6],1))
+               %Use the y ticks on the main plot
+               cTickCurr = TicksAllUse{2};
+               cTickLabelCurr = TicksAllUse{3};
+           else
+               %Read in the from the ticks already on the inset plot
+               cTickTemp = get(hInsetPlot,cAxisProps(i,:));
+               cTickCurr = cTickTemp{2};
+               cTickLabelCurr = cTickTemp{3};
+           end
+
+           %Convert from Cell to Double
+           if ischar(cTickLabelCurr)
+              cTickLabelCurr =  str2num(cTickLabelCurr);
+           elseif iscell(cTickLabelCurr)
+              cTickLabelCurr =  cellfun(@str2num,strrep(cTickLabelCurr,',',''));
+           end
+
+           %Check and if needed expand ticks to include at least 4
+           if length(cTickCurr) < 4
+               cTickCurr = [cTickCurr(1):(cTickCurr(end)-cTickCurr(1))/4:cTickCurr(end)];
+               cTickLabelCurr = [cTickLabelCurr(1):(cTickLabelCurr(end)-cTickLabelCurr(1))/4:cTickLabelCurr(end)];
+           end
+
+           %Clip the labels to the min/max for the axis
+           mLims = [min(mPlot(:,i)); max(mPlot(:,i))];
+           lNumTicks = length(cTickCurr);
+           iInds = [1:lNumTicks];
+           vLess = iInds(((cTickCurr<mLims(1)) + (circshift(cTickCurr',lNumTicks-1)'>=mLims(1))==2)); vGreater = iInds(((cTickCurr>mLims(2)) + (circshift(cTickCurr',1)'<=mLims(2))==2));
+
+           cLims = [cTickCurr(vLess) cTickCurr(vGreater)];
+           cTickCurr = cTickCurr(vLess:vGreater);
+           cTickLabelCurr = cTickLabelCurr(vLess:vGreater);
+
+           %Check and if needed expand ticks to include at least 4
+           if length(cTickCurr) < 4
+               cTickCurr = [cTickCurr(1):(cTickCurr(end)-cTickCurr(1))/4:cTickCurr(end)];
+               cTickLabelCurr = [cTickLabelCurr(1):(cTickLabelCurr(end)-cTickLabelCurr(1))/4:cTickLabelCurr(end)];
+           end
+
+           vMultPareto = floor((log(ConvertPlot2DataUnits(cTickCurr(end),mTransformToOrig(:,i)))-log(cTickLabelCurr(end)))/log(10));
+
+           sTickLabel = ThousandSep(cTickLabelCurr);
+
+           %Update the axis
+           set(hInsetPlot,cAxisProps{i,1},cLims,cAxisProps{i,2},cTickCurr,cAxisProps{i,3},sTickLabel);  
+
+           if (~isempty(strfind(cAxisLabels{i},'('))) || (vMultPareto~=0)
+               [cFir cSec] = strsplit(cAxisLabels{i},'(');
+               if length(cFir)==1
+                   cFir{2} = ')';
+               end
+               if i==1 %add newline between label and units for y axis
+                   cAxisLabels{i} = sprintf('%s\n(10^{%d} %s',cFir{1},vMultPareto,cFir{2});
+               else
+                   cAxisLabels{i} = sprintf('%s (10^{%d} %s',cFir{1},vMultPareto,cFir{2});
+               end
+           end
+       end
+
+       ylabel(cAxisLabels{1},'FontSize',fontsize-2,'color',[.737 0 0.737]);
+       xlabel(cAxisLabels{2},'FontSize',fontsize-2,'color',[.737 0 0.737]);
+
+       %Create a blank box to go behidnd the incoming figure
+       set(hInsetPlot,'visible','on');
+       vOuterPos = get(hInsetPlot,'OuterPosition');    
+       %hBackBox = annotation(hWindReturn,'rectangle',vOuterPos,'FaceColor',[0.8 0.8 0.8]);
+       set(hBackBox,'position',vOuterPos,'Visible','on');
+ 
+       drawnow; pause(0.1); %let the gui catch up
+       uistack(hInsetPlot,'top');
+    end
+
 %%  Generate Solution Input Box Callback Functions
 
     function SetFromGenBoxes(hind,event)
@@ -3747,7 +3950,51 @@ end
     hold off
 end
 
-%% Callback Functions for Controls on Plot
+%% Callback Functions for Controls on Plot that generally require calling the function again after running
+
+function PrintToPDF(hind,event,hWindCurr,mData,nO)
+  %Prints the current figure window to a PDF file specified by the user.
+  %Needs to delete several controls on the figure so the PDF prints
+  %correctly. Then calls the function again
+  
+  % INPUTS
+  % hWindCurr = handle to the figure
+  
+  %Grab the current figure settings
+  [vParams,hControls] = ReadControls('PrintToPDF',hWindCurr);
+  [lShowControls,lStartTab] = aGetField(vParams,{'ShowControls','StartTab'});
+  [mObjs,mDecs] = SplitMatrix(mData,nO);
+  %Prompt the user for the file name
+  sFileName = inputdlg('Name of PDF file:','Print to PDF',1,{'output.pdf'});
+  if isempty(sFileName)
+     warning('No file name specified. Exiting')
+     return
+  end
+  
+  %Disable the mouse callbacks
+  set(hWindCurr,'WindowButtonMotionFcn', {});
+  set(hWindCurr,'WindowButtonDownFcn', {});
+  
+  %We need to delete several of the panel controls so the figure prints correctly
+  hPanels = findall(hWindCurr,'Type','uipanel');
+  
+  if lShowControls==1
+    %Only delete the hidden panels
+    hPanels = hPanels(strcmpi(get(hPanels,'Visible'),'off')==1);
+  end
+  delete(hPanels);
+
+  %Also selete the box behind the pareto plot if it exists
+   hBoxes = findall(hWindCurr,'Type','hggroup');
+   if ~isempty(hBoxes)
+        delete(hBoxes)
+   end 
+ 
+  %Print to pdf
+  PrintNearOptFigToPdf(hWindCurr,sFileName{:})
+  %Recall the plotter since we deleted controls
+  nearoptplotmo2(mObjs,mDecs,vParams{:});  
+end
 
 function SetVisibilityAll(cPanel,Visibility)
    % Sets visibility on the all the children controls on cPanel as well as
@@ -3762,112 +4009,15 @@ function SetVisibilityAll(cPanel,Visibility)
     for i=1:nC
         switch(get(hChildren(i),'Type'))
             case 'uicontrol'
-                set(hChildren(i),'Visible',Visibility);
+                %Only change visibility for controls that are vPos > 0
+                vPosTemp = get(hChildren(i),'Position')
+                if vPosTemp(2)>0
+                    set(hChildren(i),'Visible',Visibility);
+                end
             case 'uipanel'
                SetVisibilityAll(hChildren(i),Visibility);
         end
     end
-end
-
-function ShowAllControls(hind,event,cFrame,hAxes,cChecks,sSlides,hTabContainer,xWidthAddWOControls)
-    %Toggles the visibility of all the controls
-    %if off, then control frame is off
-    %if on, then main on and slider frame returned to prior value
-    %also adjusts the width of the main plot and the positions of the
-    %checkboxes and slider controls (on the graph)
-    
-    vPos = get(hAxes(1),'Position');
-    xLeft = vPos(1);
-    yBottom = vPos(2);
-    xWidth = vPos(3);
-    yHeight = vPos(4);
-    
-    %xLeft = 0.100;
-    %xWidth = 0.625;
-    %yBottom = 0.3068;
-    %yHeight = 0.6182;
-    %xWidthAddWOControls = 0.18; %extra width to add without controls
-    
-    nAxes = max(size(hAxes));
-    nControls = max(size(cChecks));
-    nSlides = max(size(sSlides));
-    %nLines = max(size(hLines));
-    
-    xWidthOld = xWidth;
-    %cVal = get(hind,'value');
-
-    %Turn the uimenu (hind) to the opposite of what it currently is
-    if strcmpi(get(hind,'Type'),'uicontrol')
-        %Checkbox control
-        cVal = get(hind,'value');
-        if cVal == 1
-            cChecked = 'on';
-        else
-            cChecked = 'off';
-        end
-    else
-        %Menu item
-        cChecked = get(hind,'Checked');
-        if strcmpi(cChecked,'on')
-            cCheckedSet = 'off';
-            cChecked = 'on'; %actual setting is opposite (showing controls)
-        else
-            cCheckedSet = 'on';
-            cChecked = 'off';
-        end
-   
-        set(hind,'Checked',cCheckedSet);
-    end
-    
-    if strcmpi(cChecked,'off') %cVal==0 %make all the frames invisible
-        strVis = 'off';         
-        xWidth=xWidth + xWidthAddWOControls; 
-        
-    else
-        strVis = 'on';
-        xWidth = xWidth-xWidthAddWOControls;
-    end
-    
-    set(cFrame,'Visible',strVis);
-    
-    %set visibility on all the children panels and their controls
-    SetVisibilityAll(cFrame,strVis);
-    
-    %position the plot areas
-    for i=1:nAxes
-        set(hAxes(i),'Position',[xLeft yBottom xWidth yHeight]);
-    end
-    
-    %position the checkbox and slider controls (on the graph)
-    vCheckPos = get(cChecks(1),'Position');
-    
-    for i=1:nControls
-        i;
-        vCheckPos(1)=xLeft+(i-1)*xWidth/(nControls-0.5)-0.005;
-        
-        set(cChecks(i),'Position',vCheckPos);
-        if sSlides(i)~=0
-            vSliderPos = get(sSlides(i),'Position');
-            vSliderPos(1)=xLeft+(i-1)*xWidth/(nSlides-0.5)-0.005;
-            set(sSlides(i),'Position',vSliderPos);
-        end
-    end
-     
-    xPosTable = get(hTabContainer,'Position');
-    xPosTable(3) = xWidth*(nControls-0.5)/(nControls-1+0.5);
-    set(hTabContainer,'Position',xPosTable);
-    
-    
-    %for i=1:nLines
-    %    if hLines(i)>0
-    %        xPos = get(hLines(i),'x');
-
-    %        [i xPos];
-    %        xPos = xLeft+(xPos-xLeft)*xWidth/xWidthOld;
-    %        xPos;
-    %        set(hLines(i),'x',xPos);
-    %    end
-    %end
 end
 
 function [varargout] = aGetField(inArray,fields)
@@ -4040,26 +4190,26 @@ function [mMatrixReturn] = CompactToFull(mMatrix,vChecks,vCheckedValues,ReverseM
     end
 end
 
-function [SubSpaceErrorVal, SubSpaceErrorValPU] = GetCheckSubSpaceError(txtSubSpaceError,strCallFunction,TickSize)
-    %returns the SubSpace Error Value in the checkbox. Checks that the
+function [AllowableDeviationVal, AllowableDeviationValPU] = GetCheckAllowableDeviation(txtAllowableDeviation,strCallFunction,TickSize)
+    %returns the Allowable deviation in the checkbox. Checks that the
     %value is numerical and returns the absolute value
     %If the optional parameter TickSize is passed, additionally calculates
-    %and returns SubSpaceErrorVal in Plot Units.
+    %and returns AllowableDeviationVal in Plot Units.
     
-    SubSpaceErrorVal = get(txtSubSpaceError,'String');
+    AllowableDeviationVal = get(txtAllowableDeviation,'String');
 
-    %error checking on SubSpaceErrorValue
-    if ~isnumeric(str2num((SubSpaceErrorVal)))
-            warning(['nearoptmo2: ',strCallFunction],'SubSpaceError is not a numerical value. Defaulting to zero to continue')
-            SubSpaceErrorVal = 0;
+    %error checking on AllowableDeviationValue
+    if ~isnumeric(str2num((AllowableDeviationVal)))
+            warning(['nearoptmo2: ',strCallFunction],'AllowableDeviation is not a numerical value. Defaulting to zero to continue')
+            AllowableDeviationVal = 0;
     else
-            SubSpaceErrorVal= abs(str2num(SubSpaceErrorVal));
+            AllowableDeviationVal= abs(str2num(AllowableDeviationVal));
     end
     
     if nargin>2
-        SubSpaceErrorValPU=SubSpaceErrorVal*TickSize;
+        AllowableDeviationValPU=AllowableDeviationVal*TickSize;
     else
-        SubSpaceErrorValPU = NaN;
+        AllowableDeviationValPU = NaN;
     end
 end
 
@@ -4123,8 +4273,8 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     
     nO = size(mObjs,2);
     
-    [txtTolerances, txtNumSamples, cbChecks, txtSubSpaceError, sSliders, txtGroupOrders,txtGroupNames,txtGroupThicks,cbGroupChecks,txtGamsFile,cTabs,txtCurrRec,cbGenType,cbGenMethod,cbGroupToHighlight,txtFontSize] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','SubSpaceError','Sliders','GroupOrders','GroupNames','GroupThicks','GroupChecks','GamsFile','Tabs','CurrentRecord','cbGenType','cbGenMethod','HighlightGroup','txtFontSize'});
-    [uimHideSliders, uimHideControls, uimShowCurrRecord, uimShowFiltered, uimShowObjsDiffColor, uimGroupLabels] = aGetField(hControls,{'HideSliders','HideControls','ShowCurrRecord' 'ShowFilteredAlts' 'ShowObjsDiffColor' 'ShowGroupLabels'});
+    [txtTolerances, txtNumSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,txtGroupThicks,cbGroupChecks,txtGamsFile,cTabs,txtCurrRec,cbGenType,cbGenMethod,cbGroupToHighlight,txtFontSize] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupThicks','GroupChecks','GamsFile','Tabs','CurrentRecord','cbGenType','cbGenMethod','HighlightGroup','txtFontSize'});
+    [uimHideSliders,uimHideChecks, uimHideControls, uimShowCurrRecord, uimShowFiltered, uimShowObjsDiffColor, uimGroupLabels, uimShowInset] = aGetField(hControls,{'HideSliders','HideCheckboxes','HideControls','ShowCurrRecord' 'ShowFilteredAlts' 'ShowObjsDiffColor' 'ShowGroupLabels' 'ShowInsetPlot'});
     
     %Update the plot
     drawnow; pause(0.1);
@@ -4151,7 +4301,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
         error(sprintf('nearoptplotmo2 (%s) - File %s does not exist',CallFunction,sGamsFile));
     end
     
-    NumSamples = GetCheckSubSpaceError(txtNumSamples,CallFunction);
+    NumSamples = GetCheckAllowableDeviation(txtNumSamples,CallFunction);
     NewFontSize = str2num(get(txtFontSize,'String'));
     if isempty(NewFontSize)
         NewFontSize = aGetField(varargin,{'fontsize'});
@@ -4170,11 +4320,13 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     GenMethod = get(cbGenMethod,'value');
     %Hide sliders and Hide controls from menu selections
     HideSliders = Enabled2Boolean(get(uimHideSliders,'Checked'));
+    HideCheckboxes = Enabled2Boolean(get(uimHideChecks,'Checked'));
     ShowControls = Enabled2Boolean(get(uimHideControls,'Checked'),1);
     ShowCurrRecord = Enabled2Boolean(get(uimShowCurrRecord,'Checked'));
     ShowFilteredAlts = Enabled2Boolean(get(uimShowFiltered,'Checked'));
     ShowObjsDiffColor = Enabled2Boolean(get(uimShowObjsDiffColor,'Checked'));
     ShowGroupLabels = Enabled2Boolean(get(uimGroupLabels,'Checked'));
+    ShowInsetPlot = Enabled2Boolean(get(uimShowInset,'Checked'));
     
     %Group to highlight
     lGroupToHighlight = get(cbGroupToHighlight,'Value');
@@ -4188,16 +4340,16 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     %Read in the variable arguments
     [vFixedVals TickSize] = aGetField(varargin,{'vFixedVals' 'TickSize'});   
     
-    [SubSpaceErrorValue, SubSpaceErrorValPU] = GetCheckSubSpaceError(txtSubSpaceError,CallFunction,TickSize);
+    [AllowableDeviationValue, AllowableDeviationValPU] = GetCheckAllowableDeviation(txtAllowableDeviation,CallFunction,TickSize);
     [vFixedVals vSliderVals vFixedValsPU] = ReadSliderValues(sSliders,vFixedVals,mConvert);
     
     %Update the values in the field list
-    outargs = aSetField(varargin,'Tolerance',ToleranceValues,'SubSpaceError',SubSpaceErrorValue,'SubSpaceErrorPU',SubSpaceErrorValPU, ...
+    outargs = aSetField(varargin,'Tolerance',ToleranceValues,'AllowableDeviation',AllowableDeviationValue,'AllowableDeviationPU',AllowableDeviationValPU, ...
             'NumSamples',NumSamples,'vFixed',vFixed,'vFixedVals',vFixedVals,'mGroupData',mGroupData,'sGamsFile',sGamsFile, ...
             'mConvert',mConvert,'StartTab',StartTab,'CurrentRecord',lCurrRecord,'GenerateType',GenType,'GenerateMethod',GenMethod, ...
-            'HideSliders',HideSliders,'GroupToHighlight',GroupToHighlight,'ShowControls',ShowControls,'fontsize',NewFontSize, ...
+            'HideSliders',HideSliders,'HideCheckboxes',HideCheckboxes,'GroupToHighlight',GroupToHighlight,'ShowControls',ShowControls,'fontsize',NewFontSize, ...
             'nO',nO,'ShowCurrRecord',ShowCurrRecord, 'ShowFilteredAlts',ShowFilteredAlts, 'ShowObjsDiffColor',ShowObjsDiffColor, ...
-            'ShowGroupLabels', ShowGroupLabels);
+            'ShowGroupLabels', ShowGroupLabels, 'ShowInsetPlot',ShowInsetPlot);
 end
 
 function [ReturnVal] = GetCheckTxtValue(strCallFunction, txtCntl)
@@ -4346,7 +4498,7 @@ function RemoveGroups(hObj,event,mResults,nO,hWindCurr,lAction)
             vGroupNew = vGroup(RowsToRetain==1);
             mResultsNew = mResults(RowsToRetain==1,:);
             %Update the optimal solution row
-            if all(RowsToRetain(OptSolRow))
+            if all(RowsToRetain(OptSolRow)) && (~isempty(OptSolRow))
                 %Optimal solution is retained. Determine new row #
                 %in retained rows. This is simply the count of the retained rows
                 %up to current OptSolRow
@@ -4369,15 +4521,11 @@ function RemoveGroups(hObj,event,mResults,nO,hWindCurr,lAction)
     nearoptplotmo2(mObjs, mDecs,varargout{:}); 
 end
 
-%function ReorderGroups(hObj,event,mResults,nO,txtGroupOrders,txtGroupNames,cbGroupChecks,varargin)
 function ReorderGroups(hObj,event,mResults,nO,hWindCurr)
     %Reorders the groups by the entries in txtGroupOrders
-    
+    %Simply query the controls and re-call the plot function    
     [vararg_out,hControls] = ReadControls('ReorderGroups',hWindCurr);
-    %varargin_start = getappdata(hWindCurr,'varargs');
-    %vararg_out = ReadControls('RemoveGroups',hControls,varargin_start{:});
-    [mObjs, mDecs] = SplitMatrix(mResults,nO);
-    
+    [mObjs, mDecs] = SplitMatrix(mResults,nO);   
     nearoptplotmo2(mObjs, mDecs,vararg_out{:});     
 end
 
@@ -4619,7 +4767,7 @@ function Reorder(hObj,event,mMatrix, nObjs,hWindCurr)
     %nearoptplotmo(hWind, mObjs, mDecs, Tolerance, vNewFixed, vNewFixedVal,vNewStep, vObjLabels,vNewXLabels, vNewXLabelsShort,yAxisLabels, fontsize, iOpt, mNewActCat, vGroup);
 end
 
-%function RearrangeAxes(hObj,event,FarDir,Direction,txtTolerance,txtSubSpaceError,cbChecks,sSliders,mConvert,cbChecked,cbZero,mMatrix,nObjs,varargin) %#ok<INUSL>
+%function RearrangeAxes(hObj,event,FarDir,Direction,txtTolerance,txtAllowableDeviation,cbChecks,sSliders,mConvert,cbChecked,cbZero,mMatrix,nObjs,varargin) %#ok<INUSL>
 function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok<INUSL>
 
     % Called to rearrange or alter the order, position, and/or number of axis plotted. This can include
@@ -4763,10 +4911,14 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
             %goto the extremes
             if Direction==-1 %left means checked axes come first
                 vKeepDec = [vCheckDec vNoCheckDec];
-                vKeepObj = [vCheckObj vNoCheckObj];
+                 if nObjs>0
+                    vKeepObj = [vCheckObj vNoCheckObj];
+                 end
             else %right means checked axes come last
                 vKeepDec = [vNoCheckDec vCheckDec];
-                vKeepObj = [vNoCheckObj vCheckObj]; 
+                 if nObjs>0
+                    vKeepObj = [vNoCheckObj vCheckObj]; 
+                 end
             end
         else
             %move only one away in direction     
@@ -4792,10 +4944,10 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     %vKeepDec;
     
     %Read in the varargin parameters that will be maniputed
-    [vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims AMat Brhs cFunc BaseAxis Tolerance SubSpaceError] = aGetField(varargin_rrax,{'vFixedVals' 'vStep','vXLabels','vXLabelsShort','mActCat','vObjLabels','mLims','AMat','Brhs','cFunc','BaseAxis','Tolerance','SubSpaceError'});
+    [vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims AMat Brhs cFunc BaseAxis Tolerance AllowableDeviation] = aGetField(varargin_rrax,{'vFixedVals' 'vStep','vXLabels','vXLabelsShort','mActCat','vObjLabels','mLims','AMat','Brhs','cFunc','BaseAxis','Tolerance','AllowableDeviation'});
     
     %[vFixedVal vSliderSteps vFixedValPU] = ReadSliderValues(sSliders,vFixedVal,mConvert); 
-    %SubSpaceError = GetCheckSubSpaceError(txtSubSpaceError,'Prune');
+    %AllowableDeviation = GetCheckAllowableDeviation(txtAllowableDeviation,'Prune');
  
     [mS,nS] = size(mActCat);
      
@@ -4869,7 +5021,7 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
         
     %Set parameters that were manipulated to pass via varargin
     varargout = aSetField(varargin_rrax,'tolerance',Tolerance,'vFixed',vFixedN','vFixedVals',vFixedValN','vStep',vStepN,'vObjLabels',vObjLabelsN','vXLabels',vXLabelsN, ...
-                'vXLabelsShort',vXLabelsShortN,'mActCat',mActCatN,'SubSpaceError',SubSpaceError,'BaseAxis',BaseAxisN,'mLims',mLimsN,'AMat',AMatN,'Brhs',BrhsN,'cFunc',cFuncN);
+                'vXLabelsShort',vXLabelsShortN,'mActCat',mActCatN,'AllowableDeviation',AllowableDeviation,'BaseAxis',BaseAxisN,'mLims',mLimsN,'AMat',AMatN,'Brhs',BrhsN,'cFunc',cFuncN);
     
     nearoptplotmo2(mObjs, mDecs,varargout{:});
        
@@ -4964,15 +5116,15 @@ function [Value, Index] = GetFirst(cbChecks,vListValues,IsChecked)
     end
 end
 
-function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,SubSpaceErrorValPU,mMatrix,cbChecks,vFixedVals,sSliders,mConvert,vFixed)
+function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,AllowableDeviationValPU,mMatrix,cbChecks,vFixedVals,sSliders,mConvert,vFixed)
     % Finds and returns a vector of the row numbers in vGroup that have the
     % value vGroupSelect
     %
     % If optional parameters mMatrix, cbChecks, sSliders,
     % are passed, then only returns the rows in mMatrix whose columns have
-    % values within SubSpaceError tolerance for the checked columns.
+    % values within AllowableDeviation tolerance for the checked columns.
     %
-    % Remember, mMatrix, SubSpaceError, and vFixedVals are in Data units and sSlider
+    % Remember, mMatrix, AllowableDeviation, and vFixedVals are in Data units and sSlider
     % values are in Plot units. Use mConvert to convert from Plot to Data
     % units.
     %
@@ -4984,7 +5136,7 @@ function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,SubSpaceErrorValPU,mMat
     % INPUTS
     % vGruop = an m by 1 vector of groupings
     % vGroupSelect = a parameter or vector of values to search for in vGroup
-    % txtSubSpaceError = handle to a textbox with the error tolerance
+    % txtAllowableDeviation = handle to a textbox with the error tolerance
     % mMatrix = an m by n matrix of values in data units
     % cbChecks = an n by 1 vector of checkboxes corresponding to the
     % columns in mMatrix. A check mean the column is selected
@@ -5006,9 +5158,9 @@ function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,SubSpaceErrorValPU,mMat
     end
     vGroupSubSet = mInds(vGroupSubSetBin>0);
     
-    %SubSpaceErrorVal = GetCheckSubSpaceError(txtSubSpaceError,'ReturnRows');    
-    %SubSpaceErrorVal;
-    %class(SubSpaceErrorVal);
+    %AllowableDeviationVal = GetCheckAllowableDeviation(txtAllowableDeviation,'ReturnRows');    
+    %AllowableDeviationVal;
+    %class(AllowableDeviationVal);
       
     if nargin > 3 %we must also consider the column values within the error tolerance of the fixed values
         %Collect the values from the controls
@@ -5038,22 +5190,22 @@ function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,SubSpaceErrorValPU,mMat
             return
         end
         
-        %Convert SubSpaceError to Data Units for each column
-        SubSpaceErrorDU = zeros(1,n2);
+        %Convert AllowableDeviation to Data Units for each column
+        AllowableDeviationDU = zeros(1,n2);
         for i=1:n2
-            SubSpaceErrorDU(i) = ConvertPlot2DataUnits(SubSpaceErrorValPU,mConvert(:,i));
+            AllowableDeviationDU(i) = ConvertPlot2DataUnits(AllowableDeviationValPU,mConvert(:,i));
         end
         vGroupSubSetWithError = [];
         
         % loop through the rows of mMatrix
         for i=vGroupSubSet'            
                resid = abs(mMatrix(i,:).*vFixed - vFixed.*vFixedVals');
-               %[i resid SubSpaceErrorValPU]
+               %[i resid AllowableDeviationValPU]
                
                %resid
-               %SubSpaceErrorValPU
+               %AllowableDeviationValPU
 
-               if (sum(resid <= SubSpaceErrorDU)==n2)
+               if (sum(resid <= AllowableDeviationDU)==n2)
                    vGroupSubSetWithError = [vGroupSubSetWithError; i];
                end
         end
@@ -5061,7 +5213,7 @@ function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,SubSpaceErrorValPU,mMat
     end 
 end
 
-function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValue,AMatEq,BEq] = UpdateLPMatrix(hWindCurr,nO,lRetType)       
+function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue,AMatEq,BEq] = UpdateLPMatrix(hWindCurr,nO,lRetType)       
     % Use the checked axes, slider set values, and Subspace Error control setting to define a new linear system of equations representing the feasible area 
     % that is defined by the original linear program components (AMat, Brhs, cFunc) and the current fixed value settings.
     % If an optimal solution and near-optimal tolerance constraint are specified (OptSolRow and NearOptConstraint), 
@@ -5110,7 +5262,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValu
     %  mConvert = matrix of axis conversion factors from plot to data units
     %  nO = number of objectives (columns) in the data set
     %  lReturnType = 1 to include specified equity constraints if
-    %       SubSpaceErrorValue=0 (otherwise, empty) [default value: 0]
+    %       AllowableDeviationValue=0 (otherwise, empty) [default value: 0]
     %
     % OUTPUTS
     %  AMatNew = updated a-matrix defining the constraint coefficients
@@ -5127,14 +5279,14 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValu
     %       cFuncNew
     %  vFixed = 1 x n vector of binaries with a value of 1 indicating the axis is fixed
     %  vFixedVals = 1 x n vector of values specified the fixed value
-    %  SubSpaceErrorValue = string value of the Sub Space Error control
+    %  AllowableDeviationValue = string value of the Sub Space Error control
     %  AMatEq = d x nF matrix representing decision variables that are
     %       fixed values
     %  BEq = d x 1 vector of fixed variable values
 
     % Get the handles for the figure controls we will need
     [varargin_fresh,hControls,mObjsCurr] = ReadControls('UpdateLPMatrix',hWindCurr);
-    [vFixed, vFixedVals, TickSize, AMat, Brhs, cFunc, SubSpaceErrorValue, SubSpaceErrorValPU, mConvert] = aGetField(varargin_fresh,{'vFixed' 'vFixedVals' 'TickSize' 'AMat' 'Brhs' 'cFunc' 'SubSpaceError' 'SubSpaceErrorPU' 'mConvert'});   
+    [vFixed, vFixedVals, TickSize, AMat, Brhs, cFunc, AllowableDeviationValue, AllowableDeviationValPU, mConvert] = aGetField(varargin_fresh,{'vFixed' 'vFixedVals' 'TickSize' 'AMat' 'Brhs' 'cFunc' 'AllowableDeviation' 'AllowableDeviationPU' 'mConvert'});   
     [NETolerance, NearOptConstraint,OptSolRow] = aGetField(varargin_fresh,{'Tolerance','NearOptConstraint','OptSolRow'});
 
     [mF nF] = size(vFixed);
@@ -5180,7 +5332,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValu
     dToAdd = dInds(vFixed(nO+1:n) ~= 0);
     oToAdd = oInds(vFixed(1:nO) ~= 0);
     
-    if SubSpaceErrorValPU==0
+    if AllowableDeviationValPU==0
        % fixed values for decision variables
        blIsReduced = 1;
        if lRetType == 1
@@ -5206,7 +5358,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValu
         blIsReduced = 0;
         for i=dToAdd
             cRow = circshift(eye(nD,1),i-1)';
-            ErrorValDU = ConvertPlot2DataUnits(SubSpaceErrorValPU,mConvert(:,nO+i));
+            ErrorValDU = ConvertPlot2DataUnits(AllowableDeviationValPU,mConvert(:,nO+i));
             vFixedVals(i+nO);
             AMatNew = [AMatNew;cRow;-cRow];
             BrhsNew = [BrhsNew; vFixedVals(i+nO) + ErrorValDU; - vFixedVals(i+nO) + ErrorValDU];
@@ -5217,7 +5369,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValu
         warning('Need to specify parameter cFunc to fix objective function values or not enough cFuncs specified. Continuing without')
     else
         for i=oToAdd
-            ErrorValDU = ConvertPlot2DataUnits(SubSpaceErrorValPU,mConvert(:,i));
+            ErrorValDU = ConvertPlot2DataUnits(AllowableDeviationValPU,mConvert(:,i));
             AMatNew = [AMatNew;cFuncNew(i,:);-cFuncNew(i,:)];
             BrhsNew = [BrhsNew; vFixedVals(i) + ErrorValDU; - vFixedVals(i) + ErrorValDU];     
         end
@@ -5236,7 +5388,7 @@ end
 
 function [mResCompact,mResultsData,cRowsRet] = ReturnDataExtents(hCurr,mData,nO,blStrictExtent)
      %Query the max and min values from the data records in mData
-     % defined by cbChecks (fixed axes) within SubSpaceError of
+     % defined by cbChecks (fixed axes) within AllowableDeviation of
      %vFixedVals using ReturnRows. Find a min and max for each axis. returns 2*n records
      %
      % blStrictExtent = 1 will return the strict extents along each axis,
@@ -5256,19 +5408,19 @@ function [mResCompact,mResultsData,cRowsRet] = ReturnDataExtents(hCurr,mData,nO,
      % Read in the values from controls
    
     [varargin_fresh,hControls] = ReadControls('ReturnDataExtents',hCurr);    
-    [SubSpaceErrorVal,SubSpaceErrorValPU,mGroupDataSort,vGroup,vFixedVals,mConvert] = aGetField(varargin_fresh,{'SubSpaceError','SubSpaceErrorPU','mGroupData','vGroup','vFixedVals','mConvert'});
+    [AllowableDeviationVal,AllowableDeviationValPU,mGroupDataSort,vGroup,vFixedVals,mConvert] = aGetField(varargin_fresh,{'AllowableDeviation','AllowableDeviationPU','mGroupData','vGroup','vFixedVals','mConvert'});
     
     %Read in select controls
     [cbChecks,sSlider] = aGetField(hControls,{'AxisChecked','Sliders'});
     
     [m,n] = size(mData);
     
-    %[SubSpaceErrorVal, SubSpaceErrorValPU] = GetCheckSubSpaceError(txtSubSpaceError,'ReturnDataExtents',TickSize);
+    %[AllowableDeviationVal, AllowableDeviationValPU] = GetCheckAllowableDeviation(txtAllowableDeviation,'ReturnDataExtents',TickSize);
     ColInds = [1:n];
 
     %Find the groups to work with
     selGroups = mGroupDataSort(cell2mat(mGroupDataSort(:,2))==1,1); %unique(vGroup);
-    cRows = ReturnRows(vGroup,selGroups,SubSpaceErrorValPU,mData,cbChecks,vFixedVals,sSlider,mConvert);
+    cRows = ReturnRows(vGroup,selGroups,AllowableDeviationValPU,mData,cbChecks,vFixedVals,sSlider,mConvert);
     %mResultsData = mData(cRows,:);
     %size(mResults)
 
@@ -5293,7 +5445,7 @@ function [mResCompact,mResultsData,cRowsRet] = ReturnDataExtents(hCurr,mData,nO,
         for i=ColInds(vFixed==1)
             vFixedUse = vFixed;
             vFixedUse(i) = 0;
-            cRowsCurr = ReturnRows(vGroup,selGroups,SubSpaceErrorValPU,mData,cbChecks,vFixedVals,sSlider,mConvert,vFixedUse);
+            cRowsCurr = ReturnRows(vGroup,selGroups,AllowableDeviationValPU,mData,cbChecks,vFixedVals,sSlider,mConvert,vFixedUse);
             if length(cRowsCurr)==1
                 mResCompact(:,i) = repmat(mData(cRowsCurr,i),2,1);
                 cRowsRet(:,i) = repmat(cRowsCurr,2,1);
@@ -5314,7 +5466,7 @@ function [mResCompact,mResultsData,cRowsRet] = ReturnDataExtents(hCurr,mData,nO,
     mResultsData = mData(cRowsRet,:);
 end
 
-%function Resample(hWind,event,txtTolerance,txtSubSpaceError,txtNumSamples,cbGroupChecks,cbChecks,sSliders,mConvert,mData,sControls,nO,hWindCurr)
+%function Resample(hWind,event,txtTolerance,txtAllowableDeviation,txtNumSamples,cbGroupChecks,cbChecks,sSliders,mConvert,mData,sControls,nO,hWindCurr)
 function [mObjsNew, mDecsNew] = Resample(hWind,event,hWindCurr,mData,nO)
     %Re-sample an additional specified number of solutions from the sub-space defined by the checked axes and fixed values associated with those
     %axes. For decision variable axess, this is simply adding two constraints to the AMat:
@@ -5353,14 +5505,14 @@ function [mObjsNew, mDecsNew] = Resample(hWind,event,hWindCurr,mData,nO)
     %Reading in the controls and input data
     [varargin_fresh,hControls] = ReadControls('Resample',hWindCurr);
     %Update the constraint matrix
-    [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValue] = UpdateLPMatrix(hWindCurr,nO);
+    [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
     %Query the remaining controls
     %[txtTolerance txtNumSamples, txtGroupOrders,txtGroupNames,cbGroupChecks,txtGamsFile] = aGetField(hControls,{'Tolerance','NumSamples','GroupOrders','GroupNames','GroupChecks','GamsFile'});
     %ToleranceValue = get(txtTolerance,'String');
     %sGamsFile = get(txtGamsFile,'String');
-    %NumSamples = GetCheckSubSpaceError(txtNumSamples,'Resample');   
+    %NumSamples = GetCheckAllowableDeviation(txtNumSamples,'Resample');   
     
-    [ToleranceValue, sGamsFile, NumSamples, vGroup, SubSpaceGroup, mActCat, mGroupDataSort, AMat, Brhs, SubSpaceErrorValPU] = aGetField(varargin_fresh,{'tolerance' 'sGamsFile' 'NumSamples' 'vGroup' 'SubSpaceGroup' 'mActCat' 'mGroupData' 'AMat' 'Brhs' 'SubSpaceErrorPU'});
+    [ToleranceValue, sGamsFile, NumSamples, vGroup, mActCat, mGroupDataSort, AMat, Brhs, AllowableDeviationValPU] = aGetField(varargin_fresh,{'tolerance' 'sGamsFile' 'NumSamples' 'vGroup' 'mActCat' 'mGroupData' 'AMat' 'Brhs' 'AllowableDeviationPU'});
     
     [m n] = size(mData);
     nD = n-nO;
@@ -5433,12 +5585,12 @@ function [mObjsNew, mDecsNew] = EnumerateWithGams(hWind,event,hWindCurr,mData,nO
     % Get the handles for the figure controls we will need
     [varargin_fresh,hControls] = ReadControls('EnumerateWithGams',hWindCurr);
     [ToleranceValue, sGamsFile, NumSamples, vFixed, mConvert, lRunMode] = aGetField(varargin_fresh,{'tolerance' 'sGamsFile' 'NumSamples' 'vFixed' 'mConvert' 'GenerateType'});
-    [txtTolerance txtNumSamples, cbChecks, txtSubSpaceError, sSliders, txtGroupOrders,txtGroupNames,cbGroupChecks,txtGamsFile] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','SubSpaceError','Sliders','GroupOrders','GroupNames','GroupChecks','GamsFile'});
+    [txtTolerance txtNumSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,cbGroupChecks,txtGamsFile] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupChecks','GamsFile'});
 
     
     %ToleranceValue = get(txtTolerance,'String');
     %sGamsFile = get(txtGamsFile,'String');
-    %NumSamples = GetCheckSubSpaceError(txtNumSamples,'Resample');
+    %NumSamples = GetCheckAllowableDeviation(txtNumSamples,'Resample');
     
     %size(cbChecks)
     %vFixed = ReadCheckboxValues(cbChecks);
@@ -5452,12 +5604,12 @@ function [mObjsNew, mDecsNew] = EnumerateWithGams(hWind,event,hWindCurr,mData,nO
         
     %Read in the variable arguments
     %varargin_fresh = getappdata(hWindCurr,'varargs');
-    [vFixedVals,vGroup,SubSpaceGroup,TickSize,vXLabelsShort,mGroupDataSort,SubSpaceErrorValue] = aGetField(varargin_fresh,{'vFixedVals' 'vGroup' 'SubSpaceGroup' 'TickSize' 'vXLabelsShort' 'mGroupData' 'SubSpaceError'});   
+    [vFixedVals,vGroup,TickSize,vXLabelsShort,mGroupDataSort,AllowableDeviationValue] = aGetField(varargin_fresh,{'vFixedVals' 'vGroup' 'TickSize' 'vXLabelsShort' 'mGroupData' 'AllowableDeviation'});   
     
     %Update the groups
     %mGroupDataSort = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGroupChecks);
     
-    %[SubSpaceErrorValue, SubSpaceErrorValPU] = GetCheckSubSpaceError(txtSubSpaceError,'Resample',TickSize);
+    %[AllowableDeviationValue, AllowableDeviationValPU] = GetCheckAllowableDeviation(txtAllowableDeviation,'Resample',TickSize);
     %[vFixedVals vSliderVals vFixedValsPU] = ReadSliderValues(sSliders,vFixedVals,mConvert);
     
     %Change the directory/folder to the one the GAMS File is in
@@ -5531,7 +5683,7 @@ function GenerateNewSols(hWind,event,hWindCurr,mConvert,mData,nO)
         
         %First update the definition of the contraints based on the control
         %settings (checkboxes, fixed values, etc.
-        [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,SubSpaceErrorValue] = UpdateLPMatrix(hWindCurr,nO);
+        [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
        
         if lGenType==1
             %Single solution, optimize
@@ -5741,7 +5893,7 @@ function SaveFig(hind,evnt,hCurr)
     ['nearoptplotmo2(no_mObjs, no_mDecs, no_vargs{:})']
 end
 
-function LoadPareto(hind,event,mMatrix,nObjs,txtTolerance,cbChecks,sSliders,mConvert,ckAdd,txtSubSpaceError,varargin)
+function LoadPareto(hind,event,mMatrix,nObjs,txtTolerance,cbChecks,sSliders,mConvert,ckAdd,txtAllowableDeviation,varargin)
 %function LoadPareto(hind,event,hWind,mMatrix,nObjs,txtTolerance,cbChecks,vFixedVals,vStep,sSliders,vObjLabels,vXLabels,vXLabelsShort,yAxisLabels,fontsize,iOpt, mActCat,ckAdd)
     %Loads and replots pareto optimal solutions
     %If ckAdd is checked, adds pareto solutions on top of the existing
@@ -5753,7 +5905,7 @@ function LoadPareto(hind,event,mMatrix,nObjs,txtTolerance,cbChecks,sSliders,mCon
         
     %Collect the values from the controls
     ToleranceValue = str2num(get(txtTolerance,'String'));
-    SubspaceErrorNew = GetCheckTxtValue('LoadPareto',txtSubSpaceError);
+    AllowableDeviationNew = GetCheckTxtValue('LoadPareto',txtAllowableDeviation);
     
     vFixed = ReadCheckboxValues(cbChecks);
     blAdd = get(ckAdd,'Value');
@@ -5851,7 +6003,7 @@ function LoadPareto(hind,event,mMatrix,nObjs,txtTolerance,cbChecks,sSliders,mCon
     mObjs;
     mNewMatrix;
     vFixedVals;
-    varargout = aSetField(varargin,'tolerance',ToleranceValue,'vFixed',vFixed,'vFixedVals',vFixedVals,'vStep',vStep, 'GroupToHighlight',iOpt,'SubSpaceGroup',SubSpaceGroup,'vGroup',vGroupNew, 'SubSapceError', SubSpaceErrorNew);
+    varargout = aSetField(varargin,'tolerance',ToleranceValue,'vFixed',vFixed,'vFixedVals',vFixedVals,'vStep',vStep, 'GroupToHighlight',iOpt,'vGroup',vGroupNew, 'SubSapceError', AllowableDeviationNew);
     nearoptplotmo2(hWind, mObjs, mNewMatrix, varargout{:});
 end
 
@@ -5875,8 +6027,6 @@ function TestAllRegion(hind,event,hWind,mMatrix,nObjs,iRunGAMS)
            
     %Read in the variable arguments
     [ToleranceValue,NumSamples,vFixed,vFixedVals,vXLabelsShort,vGroup] = aGetField(varargin_fresh,{'tolerance','NumSamples','vFixed','vFixedVals', 'vXLabelsShort','vGroup'});
-    %[vFixedVals vGroup SubSpaceGroup TickSize iOpt vStep vXLabelsShort] = aGetField(varargin_fresh,{'vFixedVals' 'vGroup' 'SubSpaceGroup' 'TickSize' 'GroupToHighlight' 'vStep' 'vXLabelsShort'});   
-
     [m n] = size(vFixed);
     
     %Calc number of decision variables

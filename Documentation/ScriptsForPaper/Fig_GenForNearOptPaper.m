@@ -26,13 +26,13 @@
 
 %   Licensing:
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
-%   may be used for any non-commercial purpose so long as the use is cited per the citation above. Use for any commercial purpose requires 
+%   may be used for non-commercial purposes so long as the use is cited per the citation above. Use for any commercial purpose requires 
 %   prior written permission from the author.
 %
-%   Bug Reports:
-%   Bug reports are much appreciated. Please submit via the the issue tracker on the
+%   Bug Reports and Feedback:
+%   Bug reports and Feedback are much appreciated. Please submit via the the issue tracker on the
 %   GitHub repository where you downloaded this file.
-%   Note, while much appreciated, there is no promise of when, if the bug will be corrected.
+%   Note that while much appreciated, there is no promise of when, or if, a reported bug will be corrected.
 
 %% Generating the Figures
 
@@ -79,20 +79,22 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 3. Compore optimal solut
 % Interactive Steps To Shift, Increase stream bank stabilization
 %   1. Generate Figure 3. At the commnad prompt paste:
 %           >> [mResult nO vParams] = NearOptimalLP2('WQNE_outG6.gdx',3,2500,0);
-%   2. Once the figure finally loads, click the Interact tab
-%   3. From the Controls Menu=>Sliders=>uncheck Hide sliders (show them).
+%   2. Once the figure finally loads, show the control panel. From the Controls menu=>uncheck Hide all
+%       controls
+%   3. Click the Interact tab
+%   4. From the Controls Menu=>Sliders=>uncheck Hide sliders (show them).
 %       Sliders will appear on the plot all set to minimum allowable values
-%   4. Check the box for Stabilize stream banks in Chalk Creak (set level to zero).
-%   5. Set the slider to Stabilize Stream banks in the Weber below Wanship
+%   5. Check the box for Stabilize stream banks in Chalk Creak (set level to zero).
+%   6. Set the slider to Stabilize Stream banks in the Weber below Wanship
 %       sub-watershed to 3150 kg. Or in the Filter Exisiting Alternatives box,
 %       enter 3150 in the Set value text box for the axes. Ranges for other sliders
 %       will update.
-%   6. Set the slider for Stabilize stream banks in the Weber above Wanship
+%   7. Set the slider for Stabilize stream banks in the Weber above Wanship
 %       sub-watershed to 3,700 kg. Again, other sliders will update.
-%   7. In the Generate New Alternatives box, click the Generate button. The
+%   8. In the Generate New Alternatives box, click the Generate button. The
 %       command window will update with info on the alternative generation. A new group of
 %       lines will add to the plot (in purple).
-%   8. Format the plot to compare to previous settings.
+%   9. Format the plot to compare to previous settings.
 %        - Click the Display tab
 %        - Enter a new name for the new second group in purple (e.g, 'Stream
 %        bank stabilization' 
@@ -100,7 +102,7 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 3. Compore optimal solut
 %        - Similarly, change the order for the MGA group to 2 and uncheck
 %        the box at the right (do not show the MGA group)
 %        - Click the Reorder Groups button
-%   9. Retitle the figure. Paste at the command promt:
+%   10. Retitle the figure. At the command promt, paste:
 %        set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 4. Shifted, increased stream bank stabilization');
 %        
 %   
@@ -188,4 +190,4 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi
 %    7. Re-title the figure. Run the command at the command promp:
 %         >>  set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 7. Expanded near-optimal region');      
 
-msgbox('Finished auto-generating Figures 1, 2, 3, and 5. To finish generating Figures 4, 6, and 7, see further interactive steps for each figure listed as comments in the script.','Title','Progress Report')
+msgbox('Finished auto-generating Figures 1, 2, 3, and 5. To interactively create Figures 4, 6, and 7 from Figures 3 and 5, see the further steps for each figure listed as comments in the script.','Title','Progress Report')

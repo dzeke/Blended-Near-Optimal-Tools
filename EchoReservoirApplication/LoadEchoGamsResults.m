@@ -543,8 +543,10 @@ if blAddPareto == 1 %Changes for plotting a multi-objective problem
     vBRet = [vBRet;-sum(vBRet(1:3))];
     mAxisBounds = [900000 0 zeros(1,39); 1.1e6 16000 16000*ones(1,39)];
     lNearOptConstraint = [lNearOptConstraint; length(vBRet)];
+    lShowInsetPlot = 1;
 else %strip out pareto solutions and changes to plot a single-objective problem  
     mAxisBounds = [900000 zeros(1,39); 1.3e6 13000*ones(1,39)];    
+    lShowInsetPlot=0;
 end
 
 %Final filter of alternatives, keep alternatives associated with groups
@@ -561,7 +563,8 @@ mGroupData = [vGroupShort num2cell(ones(length(vGroupShort),1)) num2cell(vLineWi
 vParams = {'Tolerance',Gamma,'fontsize',20,'GroupToHighlight',iGroupToHighlight,'mActCat',vLabelLong,'vGroup',vRowCatLabel(rToKeep),'mGroupData',mGroupData, ...
        'vObjLabels',vObjLabels,'vXLabels',vLabelFull,'yAxisLabels',{'Removal Cost ($)' 'Phosphorus Removal (kg)'},'AMat',mARet, ...
        'Brhs', vBRet,'cFunc',cV,'AxisScales','custom',[1 1],mAxisBounds,'NumTicks',5,'NearOptConstraint',lNearOptConstraint,'OptSolRow', rBack(OptSolRow), ...
-       'StartTab',3,'GenerateType',3,'GenerateMethod',2,'ShowObjsDiffColor',0,'ShowGroupLabels',1,'NumSamples',pIntOrig};
+       'StartTab',1,'GenerateType',3,'GenerateMethod',2,'ShowObjsDiffColor',0,'ShowGroupLabels',1,'NumSamples',pIntOrig,'HideCheckboxes',1 ...
+       'ShowControls',0,'ShowInsetPlot',lShowInsetPlot};
    
 %Plot with the interactive paralle coordinate tool
 hNEPlot = nearoptplotmo2(mObjs(rToKeep,:), mDecisions(rToKeep,:),vParams{:});

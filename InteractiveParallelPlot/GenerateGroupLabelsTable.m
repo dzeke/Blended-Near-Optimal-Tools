@@ -2,12 +2,8 @@ function [hTableComponent hTableContainer] = GenerateGroupLabelsTable(hFigure,mM
 %determines the groupings within the fields (columns) of mMatrix to
 %compactly generate a uitable object 
 %
-% returns hTable -- a handle to the generated table
-%         rSortIndexes -- a vector of row indexes representing the original
-%                         rows in mMatrix sorted by field 1, field 2, ...
-%                         field f
-%         hLines -- a vector of handles to the generated lines separating
-%                         field values
+% returns hTableComponent -- a handle to the generated table
+%         hTableContainer -- a handle to the container the table is in
 %
 % INPUTS
 % hFigure = handle of the figure into which to place the table
@@ -19,7 +15,7 @@ function [hTableComponent hTableContainer] = GenerateGroupLabelsTable(hFigure,mM
 %   would omit fields 3, 4, 5, .... 0 means to include all fields.
 %
 %
-% vPosition = vector of [xStart yStart xWidth yHeight] in pixel units of
+% vPosition = vector of [xStart yStart xWidth yHeight] in units of
 % the provided units funits
 %
 % funits = the units of vPosition values (normalized, pixels, etc..)

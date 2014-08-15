@@ -1,4 +1,4 @@
-function Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tolerance, fontsize, axislabels, contourspace, omitNE, blAddMGA)
+function Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tolerance, fontsize, axislabels, contourspace, omitNE, blAddMGA,blManualContour)
 % Graphs the feasible region and near-optimal regions
 % for the Convex Nonlinear otimization program
 % min (max)z = f(X) = c1*X1^2 + c2*X1 + c3*X2^2 + c4*X2 + c5
@@ -36,6 +36,10 @@ function Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tolerance, fontsiz
 %   blAddMGA = boolean takes the value of 1 to calculate and include MGA
 %       maximally different solutions on the plot. 0 == don't plot MGA
 %       solutions. Default value: 0.
+%
+%   blManualContour = boolean takes the value of 1 to let the user manually
+%       set contour labels on the plot. 0 or omitted, automatically set
+%       contour labels.
 %
 % CALLED FUNCTIONS
 %    - toolbox:  \optim\optim\linprog.m
@@ -115,7 +119,7 @@ t2 = vert(2,:);
 %test = 'Before Finished ConvHull'
 z = convhull(t1,t2);
 %test = 'Finished ConvHull'
-
+Fig1 = figure;
 hold on
 h1 = patch(t1(z),t2(z),[1 .316 1]);
 set(h1,'LineWidth',2)
@@ -218,6 +222,7 @@ for i=1:m
     end
 end
 
+
 objtext = sprintf('%s%s',objtext,', and X_1,X_2 \geq 0');
 title(sprintf('%s%s',str,objtext))
 axis([mit1 max(mat1,mat2)+plotextra mit2 max(mat1,mat2)+plotextra+1])
@@ -237,6 +242,7 @@ set(h,'FontSize',fontsize)
 ylabel(ytext)
 h = get(gca,'ylabel');
 set(h,'FontSize',fontsize)
+set(gca,'box','on');
 grid
 
 IncludeNE = (nargin<10) || ((nargin>=10) && (omitNE==0));
@@ -423,10 +429,13 @@ zRange = [min(min(Z)) max(max(Z))];
 grid off
 
 [h1,cs] = contour(X1,X2,Z,[0:contourspace:1000]);
-%Label the contours - instead use the commented line #428 to manually
-%   position labels on the plot
-%clabel(h1,cs,'manual'); %'LabelSpacing',72*50,
-clabel(h1,cs,'LabelSpacing',72*3)
+%Label the contours
+if (nargin>11) && (blManualContour == 1)
+    clabel(h1,cs,'manual'); %'LabelSpacing',72*50,
+else
+    clabel(h1,cs,'LabelSpacing',72*3)
+end
+
 set(cs,'color',[0 0 1],'LineStyle','-.')
 
 hold off
