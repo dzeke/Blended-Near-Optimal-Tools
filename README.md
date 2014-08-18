@@ -1,6 +1,6 @@
 Blended Near-Optimal Tools
 ==============================
-This repository stores the Matlab 2013a source code for blended near-optimal tools that (i) generate alternatives, (ii) visualize alternatives and allow a user to interactively explore the region from which the alternatives are generated. The repository also contains the (iii) data and model files for an example water quality management application for Echo Reservoir, Utah as well as the (iv) paper, scripts and directions to generate each figure in the paper that describes these tools.
+This repository stores the Matlab 2013a source code for blended near-optimal tools that (i) generate alternatives, (ii) visualize alternatives and allow a user to interactively explore the region from which the alternatives are generated. The repository also contains the (iii) data and model files for an example water quality management application for Echo Reservoir, Utah (linear program) as well as further (iv) documentation (paper submitted to Water Resources Research, scripts and directions to generate each figure in the paper that describes these tools).
 
 1) GENERATE ALTERNATIVES
 
@@ -20,9 +20,9 @@ Tools are described here for near-optimal optimization problems but are general 
 
 Illustrates use of the tools for a linear program to identify the cost-effective phosphorus removal practices to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah to a level specified in a pending Total Maximum Daily Load (TMDL) program for the reservoir. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
 
-4) PAPER and SCRIPTS
+4) DOCUMMENTATION (PAPER and SCRIPTS)
 
-Includes the submitted paper (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. Further documentation on each tool is provided in the sub-directory of each tool (XXXX-readme.txt) as well as at the top of each source code file.
+Includes the paper submitted to Water Resources Research (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. Further documentation on each tool is provided in the sub-directory of each tool (XXXX-readme.txt) as well as at the top of each source code file.
 
 ==================
 CITATION
@@ -38,11 +38,8 @@ BUG REPORTS and FEEDBACK
 This code is possibly laden with bugs so bug reports and feedback are much appreciated. Please submit via the the issue tracker for this repository. And note, that while much appreciated, there is no promise of when--or if--the bug will be fixed.
 
 David E. Rosenberg
-
 Department of Civil & Environmental Engineering and Utah Water Research Lab
-
 Utah State University
-
 Email: david.rosenberg@usu.edu
 
 
