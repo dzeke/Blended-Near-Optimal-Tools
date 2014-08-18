@@ -38,8 +38,11 @@ BUG REPORTS and FEEDBACK
 This code is possibly laden with bugs so bug reports and feedback are much appreciated. Please submit via the the issue tracker for this repository. And note, that while much appreciated, there is no promise of when--or if--the bug will be fixed.
 
 David E. Rosenberg
+
 Department of Civil & Environmental Engineering and Utah Water Research Lab
+
 Utah State University
+
 Email: david.rosenberg@usu.edu
 
 
