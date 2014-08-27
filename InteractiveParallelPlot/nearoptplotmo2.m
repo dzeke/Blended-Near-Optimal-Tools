@@ -117,8 +117,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %            deravative labels, controls, etc. (Default value: 16)
 % 
 %     mActCat = an nD by nF matrix whose rows represent the decision variables and nF columns are grouping fields to categorically classify
-%           the decision variables; used to generate an optional table of decision variable labels to position below the decision variable axis labels and to
-%           color-code groups of those labels/axes (default value - [])
+%           the decision variables; used to generate an optional table of decision variable labels to position below the decision variable axis labels, to
+%           color-code groups of those labels/axes, and reorder axes (by groups) on the Display Tab (default value - [] or all ones)
 
 %     vGroup  = m-length column vector whose values specify the group to
 %           which each row in mObjs and mDecisions belongs and should be
@@ -398,8 +398,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %   Water Resources Research. Submitted August 2014
 
 %   Licensing:
-%   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
-%   may be used for any non-commercial purpose so long as the use is cited per the citation above. Use for any commercial purpose requires 
+%   This code is distributed AS-IS with no expressed or implied warranty regarding functionality. The entire code or parts 
+%   may be used for non-commercial purposes so long as the use is cited per the citation above. Use for any commercial purpose requires 
 %   prior written permission from the author.
 %
 %   Bug Reports and Feedback:
@@ -746,7 +746,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 if ~isempty(NearOptConstraintTemp) && (length(NearOptConstraintTemp) ~= nO)
                     warnmsg = ['nearoptplotmo2: NearOptConstraint must be same size as mObjs. Default to empty []'];
                     warning(warnmsg)
-                    NearOptConstraintTemp = [];
+                else
+                    NearOptConstraint = NearOptConstraintTemp;
                 end
                 count=count+1;            
                 
@@ -756,12 +757,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 if any(OptSolRowTemp < 0) || any(OptSolRowTemp > m)
                     warnmsg = ['nearoptplotmo2: OptSolRow must be > 0 and less than ',num2str(m),'. Default to empty [].'];
                     warning(warnmsg)                   
-                    OptSolRowTemp = [];
-                end
-                if ~isempty(OptSolRowTemp) && (length(OptSolRowTemp) ~= nO)
+                elseif ~isempty(OptSolRowTemp) && (length(OptSolRowTemp) ~= nO)
                     warnmsg = ['nearoptplotmo2: OptSolRow must be same size as mObjs. Default to empty []'];
                     warning(warnmsg)
-                    OptSolRowTemp = [];
+                else
+                    OptSolRow = OptSolRowTemp;
                 end
                 
                 count=count+1;                       
@@ -969,17 +969,17 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             end
         end     
             
-         %Further error testing on NearOptConstraint and OptSolRow; these
-         %need to coordinated with AMat and cFunc         
-         if isempty(AMat) || isempty(cFunc)
-            warning('nearoptplotmo2: no AMat or cFunc defined. Ignoring NearOptConstraint and OptSolRow inputs and using default values of [].');
-         else
-             NearOptConstraint = NearOptConstraintTemp;
-             OptSolRow = OptSolRowTemp;
+         %Further error testing on parameters needed to generate alternatives       
+         if (GenMethod==2) && (isempty(AMat) || isempty(Brhs) || isempty(NearOptConstraint) || isempty(OptSolRow))
+            warning('nearoptplotmo2: To generate alternatives by Matlab linear programming, must define AMat, Brhs, NearOptConstraint, and OptSolRow inputs. Setting GenerateMethod engine to Data and other inputs to empty.');
+            GenerateMethod = 1;
+            AMat = []; Brhs=[]; NearOptConstraint=[]; OptSolRow=[];
          end         
-         if isempty(NearOptConstraint) || isempty(OptSolRow)
-             warning('nearoptplotmo2: NearOptConstraint and/or OptSolRow inputs not defined. Will not dynamically update near-optimal tolerance constraint when random sampling to generate new alterantives.');
-         end
+         
+         if (GenMethod==3) && (isempty(sGamsFile) || ~exist(sGamsFile,'file'))
+            warning(['nearoptplotmo2: ',sGamsFile, ' GAMS file does not exist. Setting to empy. To generate alternatives by GAMS, enter a valid file name on the Interact Tab.']);
+            sGamsFile = '';            
+         end           
          
          %If showing group labels table, need to have the table of
          %mActCat to show
@@ -1104,7 +1104,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     % update vStep if no value passed
     if isnan(vStep)
-        vStep = (max(mResults)-min(mResults))/20;
+        vStep = (max(mResults,[],1)-min(mResults,[],1))/20;
     end
     
     %% Start building the plot
@@ -1155,8 +1155,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %get(plot2,'Position')
     
     %fprintf('Initial Maxes / Mins\n');
-    vMaxResult = max(mResults);
-    vMinResult = min(mResults);
+    vMaxResult = max(mResults,[],1);
+    vMinResult = min(mResults,[],1);
     
     %% Rescale/transform the vertical axis if needed
     % We need to find a set of plot units that allow us to show the data in
@@ -1267,20 +1267,14 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
            if strcmpi(AxisScales,'auto')
                 vMaxCompare = vMaxResult;
                 mPlotTemp = mPlot;
-                %calc for just the objective functions
-                %[mUseResObj, vMultObj, BaseObjCol] = ScaleMultipleAxes(mPlotTemp(:,1:nO));
-                
-                %MaxObjVal = max(mUseResObj(:,BaseObjCol));
-                %BaseAxis(1) = BaseObjCol;
-                %BaseObjCol;
-                %vMultObj;
+
                 %Now build the entire set of transformed objectives and decision axes
                 [mUseResAll, vMultAll, BaseAll] = ScaleMultipleAxes(mPlotTemp);
                 
                 mPlot = mUseResAll;
                 BaseAll;
                 
-                MaxAllVal = max(mUseResAll(:,BaseAll));
+                MaxAllVal = max(mUseResAll(:,BaseAll),[],1);
                 %Concatenate all the multipliers
                 vMults = vMultAll;
                 %vMults = [vMultObj vMultAll(nO+1:n)];
@@ -1353,28 +1347,12 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         for i=1:n
             mTransformToOrig(:,i) = polyfit(mPlot(:,i),mResults(:,i),1)';
         end
-        if strcmpi(AxisScales,'auto')
-            %currticks;
-            minDC;
-            %YMaxPU = ConvertPlot2DataUnits(max(rticksnum),mTransformToOrig(:,nO+minDC),1);
-            %YMaxPU = MaxToUse;
-            %YMinPU = MinToUse;
-        else
-            %YMaxPU = ymaxdec;
-            %YMinPU = ymin;
-        end
     end
     mTransformToOrig;    
     
     %Revisit the scaling now in plot units   
     if 1
         %Temportary plot in plot units to get the auto Y limits
-        if 0
-            [min(mResults)' max(mResults)']
-            [min(mPlot)' max(mPlot)']
-            min(min(mResults))
-            max(max(mResults))
-        end 
         dTemp = parallelcoords(mPlot);
         if ~strcmpi(AxisScales,'custom') && ~strcmpi(AxisScales,'normalize')
             %allow Matlab to determine the y axis limits            
@@ -1529,14 +1507,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         %vMaxPlot(:) = 1;
         %vMinPlot(:) = 0;  
     %else
-        vMaxPlot = max(mPlot);
-        vMinPlot = min(mPlot);
+        vMaxPlot = max(mPlot,[],1);
+        vMinPlot = min(mPlot,[],1);
    % end
     
     mPlot(:,1:nO);
-    %fprintf('Final Maxes/Mins\n');
-    vMaxResult;
-    vMinResult;
     
     %Create a vector to store vFixedVals in Plot Units
     vFixedValsPlotUnits = vFixedVals;
@@ -2499,7 +2474,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         %Callback when the figure is resized. Grab the current data and
         %control settings and replot the figure (to update the positioning)      
         %ReorderGroups(0,0,mResults,nO,hWindReturn);
-        PositionGroupLabelsTable(hTabContainer, nO, hTexts, plot2)
+        PositionGroupLabelsTable(hTabContainer, nO, hTexts, plot2);
     end
 
    function MouseButtonDownCallback(src,evt)
@@ -2675,7 +2650,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         
         %Error check validity of limit settings. If not valid, default to a
         %LimitSource setting of 1 (from Data records)     
-        if (LimitSource==2) && (isempty(AMat) || isempty(Brhs))
+        if (LimitSource==2) && (isempty(AMat) || isempty(Brhs) || isempty(OptSolRow) || isempty(NearOptConstraint))
             warning('Linear system not defined (AMat and/or Brhs). Continuing with plot data');
             set(cbGenerateMethod,'Value',1);
             LimitSource = 1;
@@ -2703,6 +2678,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             %Sliders visible, query min and max values using linear constraints defined in
             %AMat and brhs. Use maximum extent functions
             [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue,Aeq,Beq] = UpdateLPMatrix(hWindReturn,nO,1);
+            
             [mResultsValUse,mResCompact] = maxextentind(AMatNew,BrhsNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1)); %'Aeq',Aeq,'Beq',Beq,
             
             if any(isnan(mResultsValUse))
@@ -2744,11 +2720,13 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             for i=1:n
                 mResultsPlot(:,i) = ConvertPlot2DataUnits(mResultsValUse(:,i),mTransformToOrig(:,i),1);
             end           
-        elseif (lHideSliderValue==0) && (LimitSource==2)
+        elseif (lHideSliderValue==0) && (LimitSource==3)
             %Use GAMS to return the limits
             %Change the directory/folder to the one the GAMS File is in
-            [sPath,sFileName,sFileExt] = fileparts(sGamsFile);            
-            cd(sPath);
+            [sPath,sFileName,sFileExt] = fileparts(sGamsFile);
+            if ~strcmpi(sPath,'')
+                cd(sPath);
+            end
 
             RunMode = 2;
             ColInds = [1:n];      
@@ -2769,7 +2747,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             for i=1:n
                 mResultsPlot(:,i) = ConvertPlot2DataUnits(mResultsValUse(:,i),mTransformToOrig(:,i),1);
             end
-            mResCompact = [[min(vObjs(vReturnFlag==RunMode,:)); max(vObjs(vReturnFlag==RunMode,:))] [min(mResultsValUse);max(mResultsValUse)]];
+            mResCompact = [[min(vObjs(vReturnFlag==RunMode,:),[],1); max(vObjs(vReturnFlag==RunMode,:),[],1)] [min(mResultsValUse,[],1);max(mResultsValUse,[],1)]];
             
             if RunMode==2
                 ColInds = ColInds(vFixed==0);
@@ -2981,8 +2959,6 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         end
 
         [m n] = size(cbChecks);
-        %nG = max(size(hTextGroup));
-        %nL= max(size(hLines));
         
         %Hide the checks, reposition the texts
         for i=1:n
@@ -3091,9 +3067,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         end
 
         [m n] = size(cbChecks);
-        %nG = max(size(hTextGroup));
-        %nL= max(size(hLines));
-
+ 
         for i=1:n
             set(cbChecks(i),'Visible',sVisible);
             cUnits = get(hTexts(i),'Units');
@@ -4611,8 +4585,7 @@ end
                                     
 %function Reorder(hObj,event,mMatrix, nObjs, txtTolerance, cbChecks, sSliders,mConvert,cbReorder, cbByCat, varargin) %#ok<INUSL>
 function Reorder(hObj,event,mMatrix, nObjs,hWindCurr)
-  %  txtTolerance, cbChecks, sSliders,mConvert,cbReorder, cbByCat, varargin)
-% Called to reorder the decision variable columns of mMatrix according to the dynamic ranges of the decision variables
+    % Reorder the decision variable columns of mMatrix according to the dynamic ranges of the decision variables
     % If cbReorder is checked then put the constant non-zero decision variables first, dyanmic range variables second, and zero-valued variables third.
     % If cbReorder is NOT checked: put the variables with dynamic range
     % first, constant non-zero decision variables second, and zero-valued decision variables third
@@ -4625,9 +4598,8 @@ function Reorder(hObj,event,mMatrix, nObjs,hWindCurr)
     
     % Also reorders the corresponding Fixed Axes in cbChecks, labels and
     % abreviations in vXLables and vXLabelsShort, and vActCats
-    
-    
-    [max(mMatrix(:,2:end)); min(mMatrix(:,2:end))];
+       
+    %[max(mMatrix(:,2:end),2); min(mMatrix(:,2:end),2)]
     
     [m,n] = size(mMatrix);
     
@@ -4656,18 +4628,10 @@ function Reorder(hObj,event,mMatrix, nObjs,hWindCurr)
     if iUseCat==1
         %reorganize columns by category
         [mActCatSort iCatSort] = sortrows(mActCat,[1:nS]);
-        
+        [cats,iCatStart,iCat] = unique(mActCatSort(:,1));
         %count columns in each category
-        mActCat;
-        cats=unique(mActCat(:,1))
-        if strcmp(class(mActCat),'cell')
-            mActCat = cell2mat(mActCat(:,1));
-        end
-        if strcmp(class(cats),'cell')
-            cats = cell2mat(cats);
-        end        
-        CatCounts = histc(mActCat(:,1),cats);
-        nCats = max(size(CatCounts));
+        CatCounts = histc(iCat,unique(iCat));
+        nCats = length(cats);
        
         for i=1+nObjs:n
             mMatrixN(:,i) = mMatrix(:,iCatSort(i-nObjs)+nObjs);
@@ -4834,8 +4798,8 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
             vPruneCheck = vFixed;
             sError = 'No axes checked. Need to check at least one axis to indicate the axes to delete.';
         elseif iZero>0
-            vMax = max(mMatrix);
-            vMin = min(mMatrix);
+            vMax = max(mMatrix,2);
+            vMin = min(mMatrix,2);
 
             vPruneZero = (vMax == 0) .* (vMin==0);
             sError = 'No axes have values that are all zero. No axes to delete.';
@@ -5298,8 +5262,11 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
 
     %Build the new constraint matrix that includes the fixed decision and
     %objective function values
-    if isempty(AMat) || isempty(Brhs)
-        error('UpdateLPMatrix: Can not resample. Need to provide AMat and/or Brhs parameters as inputs to represent the constraint system [AMat][X] <= Brhs of the underlying optimization problem.')
+    if isempty(AMat) || isempty(Brhs) || isempty(NearOptConstraint) || isempty(OptSolRow)
+        drawnow;
+        msgbox('Need additional input data to generate new alternatives with Matlab. Specify AMat and Brhs (to define the constraints (AMat)(x)<=Brhs), NearOptConstraint (row in AMat that is the near-optimal constraint), and OptSolRow (row in original mDecisions that is the optimal solution) on opening the plotter. Instead, set Generate engine to Data or GAMS.','Error');
+        AMatNew = [];
+        return
     end
 
     AMatNew = AMat;
@@ -5506,11 +5473,11 @@ function [mObjsNew, mDecsNew] = Resample(hWind,event,hWindCurr,mData,nO)
     [varargin_fresh,hControls] = ReadControls('Resample',hWindCurr);
     %Update the constraint matrix
     [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
-    %Query the remaining controls
-    %[txtTolerance txtNumSamples, txtGroupOrders,txtGroupNames,cbGroupChecks,txtGamsFile] = aGetField(hControls,{'Tolerance','NumSamples','GroupOrders','GroupNames','GroupChecks','GamsFile'});
-    %ToleranceValue = get(txtTolerance,'String');
-    %sGamsFile = get(txtGamsFile,'String');
-    %NumSamples = GetCheckAllowableDeviation(txtNumSamples,'Resample');   
+
+    if isempty(AMatNew)
+        %There was an error
+        return
+    end
     
     [ToleranceValue, sGamsFile, NumSamples, vGroup, mActCat, mGroupDataSort, AMat, Brhs, AllowableDeviationValPU] = aGetField(varargin_fresh,{'tolerance' 'sGamsFile' 'NumSamples' 'vGroup' 'mActCat' 'mGroupData' 'AMat' 'Brhs' 'AllowableDeviationPU'});
     
@@ -5585,15 +5552,8 @@ function [mObjsNew, mDecsNew] = EnumerateWithGams(hWind,event,hWindCurr,mData,nO
     % Get the handles for the figure controls we will need
     [varargin_fresh,hControls] = ReadControls('EnumerateWithGams',hWindCurr);
     [ToleranceValue, sGamsFile, NumSamples, vFixed, mConvert, lRunMode] = aGetField(varargin_fresh,{'tolerance' 'sGamsFile' 'NumSamples' 'vFixed' 'mConvert' 'GenerateType'});
-    [txtTolerance txtNumSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,cbGroupChecks,txtGamsFile] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupChecks','GamsFile'});
-
+    %[txtTolerance txtNumSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,cbGroupChecks,txtGamsFile] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupChecks','GamsFile'});
     
-    %ToleranceValue = get(txtTolerance,'String');
-    %sGamsFile = get(txtGamsFile,'String');
-    %NumSamples = GetCheckAllowableDeviation(txtNumSamples,'Resample');
-    
-    %size(cbChecks)
-    %vFixed = ReadCheckboxValues(cbChecks);
     [mF nF] = size(vFixed);
     [m n] = size(mData);
     
@@ -5618,12 +5578,14 @@ function [mObjsNew, mDecsNew] = EnumerateWithGams(hWind,event,hWindCurr,mData,nO
         return
     end
     [sPath,sFileName,sFileExt] = fileparts(sGamsFile);
-    cd(sPath);
+    if ~strcmpi(sPath,'')
+        cd(sPath);
+    end
     
     %[vXLabelsShort' num2cell(vFixed(nO+1:end)') num2cell(vFixedVals(nO+1:end))]
  
     %Pass the values and enumerate the integer solutions
-    [mObjs, mResultsInt, mResultsVal, uelsOut, ReturnFlag, GamsStats, NumSolvs] = EnumNEIntSolsGams4(sGamsFile,vFixed(nO+1:end),vFixedVals(nO+1:end),vXLabelsShort,str2num(ToleranceValue),2,lRunMode);
+    [mObjs, mResultsInt, mResultsVal, uelsOut, ReturnFlag, GamsStats, NumSolvs] = EnumNEIntSolsGams4(sGamsFile,vFixed(nO+1:end),vFixedVals(nO+1:end),vXLabelsShort,ToleranceValue,2,lRunMode);
     
     %[min(mResultsVal);max(mResultsVal)]
     
@@ -5645,10 +5607,10 @@ function [mObjsNew, mDecsNew] = EnumerateWithGams(hWind,event,hWindCurr,mData,nO
     numErrors = sum(ReturnFlag<0);
 
     %[mObjsNew mDecisionsNew]
-    [sprintf('%d solves made\n%d new solutions added\n%d errors',NumSolvs,NumSolvs-numErrors,numErrors)]
+    [sprintf('%d solves made\n%d new alternatives added\n%d errors',NumSolvs,NumSolvs-numErrors,numErrors)]
 
     if numErrors>0
-        ['Solutions with errors']
+        ['Alternatives with errors']
         [ReturnFlag(ReturnFlag<0) GamsStats(ReturnFlag<0,:) mResultsInt(ReturnFlag<0,:)]
     end        
 end  
@@ -5684,6 +5646,11 @@ function GenerateNewSols(hWind,event,hWindCurr,mConvert,mData,nO)
         %First update the definition of the contraints based on the control
         %settings (checkboxes, fixed values, etc.
         [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
+        
+        if isempty(AMatNew)
+            %There was an error
+            return
+        end
        
         if lGenType==1
             %Single solution, optimize
