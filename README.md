@@ -4,6 +4,7 @@ This repository stores the Matlab 2013a source code for blended near-optimal too
 
 Near-optimal alternatives perform within a (near-optimal) tolerable deviation of the optimal objective function value and are of interest to managers and decision makers because near-optimal alternatives can address un-modelled objectives, preferences, limits, uncertainties, or issues that are not considered by an original optimization model or it's optimal solution. Mathematically, the region of near-optimal alternatives is defined by the original optimization model constraints as well as a constraint that limits alternatives to those with objective function values that are within a tolerable deviation of the optimal objective function value. The code and tools within this repository allow users to generate, visualize, and interactively explore alternatives from the near-optimal region of an optimization problem. The tools and their use are described here for generating, visualizating, and interactively exploring near-optimal alternatives to an optimization problems, but the tools are general and can be used for any high-dimensional, closed, bounded region that can be defined by a system of constraints. The parallel coordinate plotting and several interaction tools can also be used for any high-dimensional data set.   
 
+==============================
 1) DOCUMMENTATION (Paper and Scripts)
 
 Includes the paper submitted to Water Resources Research (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. These scripts make use of each of the tools described in sections 2) to 4). To generate each figure in the manuscript:
@@ -18,6 +19,7 @@ Includes the paper submitted to Water Resources Research (under review) that des
     e. The script will generate Figures 1, 2, 3, and 6 in the submitted manuscript.
     f. See the file Documentation-readme.txt for further instructions on how to interactively generate figures 4, 5, and 7 from Figure 3 and 6.
 
+==============================
 2) GENERATE ALTERNATIVES
 
 Uses stratified Monte-Carlo Markov Chain sampling to identify a large number of alternatives that comprehensively span the near-optimal region through both the decision and objective spaces. To get started:
@@ -30,6 +32,7 @@ Uses stratified Monte-Carlo Markov Chain sampling to identify a large number of 
        
     d. See additional directions in the file GenerateAlternatives-readme.txt for use of the stratgibbs function.
 
+==============================
 3) PARALLEL COORDINATE VISUALIZATION and INTERACTION
 
 Parallel coordinate plot places axes for all objectives and decision variables side-by-side on a single page and shows the generated alternatives across the decision and objective spaces. Interaction controls on and next to the plot:
@@ -49,6 +52,7 @@ To get started:
 
     d. See additional directions in the file InteractiveParallelPlot-readme.txt and in the header of the nearoptplotmo2.m for use of the function.
 
+==============================
 4) ECHO RESERVOIR APPLICATION (Linear program to manage water quality)
 
 Illustrates use of the tools for a linear program to identify the cost-effective phosphorus removal practices to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah to a level specified in a pending Total Maximum Daily Load (TMDL) program for the reservoir. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
@@ -64,7 +68,8 @@ To use:
 
     e. Matlab will read optimal and modelling to generate alternatives (MGA) results from the file WQNE_outG6.gdx. Matlab will also generate 2,500 near-optimal alternatives (see Section 2 above) and plot the optimal, MGA, and near-optimal results in the Interactive Parallel Plotting tool (see Section 3 above).
     f. See additional directions in the file EchoReservoirApplication-readme.txt.
-    
+
+==============================    
 5) AMMAN, JORDAN APPLICATION (Mixed-integer program to manage water supply/demand)
 
 Illustrates use of the tools for a mixed-integer program to identify the cost-effective combination of new water supply and conservation strategies to balance water supplies and demands in Amman, Jordan through 2020. Includes all the data and model files and scripts to move data from the models to the near-optimal tools and to run the model from within the Interactive Parallel Coordinate Plotting tool.
