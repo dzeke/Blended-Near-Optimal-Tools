@@ -404,6 +404,22 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %    nearoptplotmo2(150000*rand(5,2),[5*rand(5,1) 20*rand(5,1) 5*rand(5,6)],'vGroup',MyGroups,'AxisScales','auto','FontSize',18,'ShowObjsDiffColor',0);
 %       Like E but text labels used for groups. Note groups are ordered
 %       alphanumerically so Group 1 still listed and plotted first in light green.
+%
+% G) n = 5; r = 6; p = 150;
+%    c = [5 3 1 0.5 0.5];
+%    A = [-eye(n); ones(1,n)]; b = [zeros(n,1); r]; %Constraints of form Ax <= b define a simplex of length 6                                                 
+%    mVert = [zeros(1,n); r*eye(n)]; %Vertices (corner points) of the simplex. Used for comparison on the plot.
+%   [Xopt,fopt] = linprog(-c,A,b);   %Solve for optimal solution, negative sign on c indicates maximization
+%   vObjsVert = mVert*c'; %Calculate objective function values for the vertices
+%   vGroups = ['Optimum'; repmat({'Vertices'},length(vObjsVert),1)];
+%   mGroupData = ['Vertices' {1} {1.5}; 'Optimum' {1} {2.5}];
+%   nearoptplotmo2([-fopt;vObjsVert],[Xopt';mVert],'Tolerance',0.85,'AMat',[A;-c],'Brhs',[b;fopt],'cFunc',c,...
+%       'OptSolRow',1,'NearOptConstraint',7, 'ShowObjsDiffColor',0,'vGroup',vGroups,...
+%       'mGroupData',mGroupData,'GroupToHighlight','Optimum','GenerateType',3,'GenerateMethod',2,'NumSamples',p);
+%
+%     Show optimal solution (in thick black) and vertices (green) for a problem to maximize the objective cX subject to contraints that define the 5-dimensional simplex
+%     of length 5. Once the plot loads, select the Interact Tab and click
+%     the Generate button to see 150 sampled near-optimal alternatives.
 %   
 %% #####################
 %   Programmed by David E. Rosenberg
@@ -1411,31 +1427,20 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     mTransformToOrig;    
     
     %Revisit the scaling now in plot units   
-    if 1
-        %Temportary plot in plot units to get the auto Y limits
-        dTemp = parallelcoords(mPlot);
-        if ~strcmpi(AxisScales,'custom') && ~strcmpi(AxisScales,'normalize')
-            %allow Matlab to determine the y axis limits            
-            yLimsSecond = get(plot2,'yLim');
-        end
-        yLimsSecond;
-        ymax = yLimsSecond(2);
-        ymin = yLimsSecond(1);
-        %Create a set of ticks along these limits
-        dticks = [yLimsSecond(1):(yLimsSecond(2)-yLimsSecond(1))/(NumTicks(1)-1):yLimsSecond(2)];
-        dticksr = [yLimsSecond(1):(yLimsSecond(2)-yLimsSecond(1))/(NumTicks(2)-1):yLimsSecond(2)];
-        set(plot2,'ytick',dticks);
-        delete(dTemp);
-    else %old approach
-        set(plot2,'xLim',[1 n+0.5],'yLim',[YMinPU YMaxPU]);
-
-        get(plot2,'ytick');
-        get(plot2,'yticklabel');
-
-        %ymaxobj = max(max(mPlot(:,1:nO))); 
-        ymax = YMaxPU;
-        ymin = YMinPU;  
+    %Temportary plot in plot units to get the auto Y limits
+    dTemp = parallelcoords(mPlot);
+    if ~strcmpi(AxisScales,'custom') && ~strcmpi(AxisScales,'normalize')
+        %allow Matlab to determine the y axis limits            
+        yLimsSecond = get(plot2,'yLim');
     end
+    yLimsSecond;
+    ymax = yLimsSecond(2);
+    ymin = yLimsSecond(1);
+    %Create a set of ticks along these limits
+    dticks = [yLimsSecond(1):(yLimsSecond(2)-yLimsSecond(1))/(NumTicks(1)-1):yLimsSecond(2)];
+    dticksr = [yLimsSecond(1):(yLimsSecond(2)-yLimsSecond(1))/(NumTicks(2)-1):yLimsSecond(2)];
+    set(plot2,'ytick',dticks);
+    delete(dTemp);
     
     if strcmpi(AxisScales,'auto') || strcmpi(AxisScales,'custom')
         %May need to revisit scale labels/ticks on the left and right scales
@@ -1961,7 +1966,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         %prior Move/Delete Panel. Height is the smaller of either the
         %remaining height of the parent Control Panel or box to tightly frame the group controls
         
-    lFEAPanHeight = min([abs(lGSPanPos(2) - 0.02); lGSPanPos(4)*(n + 3)/7]);
+    lFEAPanHeight = min([abs(lGSPanPos(2) - 0.02); lGSPanPos(4)*(n + 4)/7]);
     lFEAPanPos = [0.02 lGSPanPos(2) - 0.02 - lFEAPanHeight 1-0.04 lFEAPanHeight];
     
     if any(lFEAPanPos<0)
@@ -5626,7 +5631,7 @@ function [mObjsNew, mDecsNew] = EnumerateWithGams(hWind,event,hWindCurr,mData,nO
     
     %Change the directory/folder to the one the GAMS File is in
     if exist(sGamsFile,'file') == 0
-        error(['nearoptplotmo2:EnumerateWithGAMS--the file ',sGamsFile,' does not exist.']);
+        msgbox(['The file ',sGamsFile,' does not exist. Cancelling.'],'Warning');
         return
     end
     [sPath,sFileName,sFileExt] = fileparts(sGamsFile);
@@ -5686,7 +5691,7 @@ function GenerateNewAlts(hWind,event,hWindCurr)
     if lGenUse==1
         %Data
         if lGenType~=2
-            warning(['No function defined for GenType #', num2str(lGenType), '. Ignoring']);
+            msgbox(['No function defined for GenType #', num2str(lGenType), '. Ignoring'],'Warning');
             return;
         else
            [mResCompact,mResultsData, cRows] = ReturnDataExtents(hWindCurr,mData,nO,1);

@@ -8,6 +8,8 @@ Rosenberg-NearOptimalWaterResourcesDecisionMaking-Aug2014.pdf : revised version 
 
 Rosenberg-ResponseLetter-NearOptimal2-Aug2014.pdf : Letter listing reviewer comments, author responses and descritions of changes made in the August, 2014 version of the paper to address the comments.
 
+LoadYourOwnModel.m : Directions and example for how to load your own model data into the near-optimal tools. Specific directions for linear programs, more general directions for mixed-integer and non-linear programs.
+
 
 Within the ScriptsForPaper folder:
 
