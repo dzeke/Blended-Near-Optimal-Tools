@@ -21,6 +21,8 @@ Includes the paper submitted to Water Resources Research (under review) that des
     e. The script will generate Figures 1, 2, 3, and 6 in the submitted manuscript.
     f. See the file Documentation-readme.txt for further instructions on how to interactively generate figures 4, 5, and 7 from Figure 3 and 6.
 
+Also provides directions and an example to load your own model data into the near-optimal tools.
+
 ==============================
 2) GENERATE ALTERNATIVES
 
