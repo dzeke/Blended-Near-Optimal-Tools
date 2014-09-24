@@ -2,7 +2,7 @@ function [mValuesU nObjs vParams] = LoadEchoGamsResults(GDXFile,lOptSol,pIntOrig
 % Read in GAMS results from a GDX file and prepare the results for
 % plotting in the interactive near-optimal parallel coordinate plotting
 % tool
-%   The results include optimal solutions and maximally-different alternatives generated using Modeling to Generate Alternative (MGA)
+%   The results include optimal solutions and maximally-different near-optimal alternatives generated using Modeling to Generate Alternative (MGA)
 %       hop-skip-jump methods. Additinally pareto solutions for
 %       multi-objective problem.
 %   The script then adds pInt # of stratified sampled near-optimal alternatives, calculates objective function values for the sampled alternatives, and 
@@ -10,7 +10,7 @@ function [mValuesU nObjs vParams] = LoadEchoGamsResults(GDXFile,lOptSol,pIntOrig
 %   - objective function (1st, scale at left), and 
 %   - decision variables (2nd to n+1, scale at right)
 %   - The Plot will have the following groups of traces
-%       - Random sampled interior points (thin light green lines)
+%       - Sampled near-optimal alternatives (thin light green lines)
 %       - Modeling to Generate Alternatives (MGA) that are maximally
 %         different in decision space from te optimal solution
 %         (purple lines)
@@ -274,7 +274,7 @@ for i=1:nD
 end
 
 %STEP 2 Classify each alternative into a group for later plotting
-vGroupOrder = {'Random interior' 'MGA' 'Pareto' 'Optimum'}'; %This order ensures the optimum plots last on top and MGA on top of random interior
+vGroupOrder = {'Near-optimal' 'MGA' 'Pareto' 'Optimum'}'; %This order ensures the optimum plots last on top and MGA on top of random interior
 vLineWidth = [1 2 3 3]';
 
 vGroupUse = zeros(1,length(vGroupOrder)); %indicator of whether group is actually used in this run
@@ -307,7 +307,7 @@ if nPareto>0
         end   
         
         vGroupUse(3) = 1;
-        OptSolRow = [OptSolRow; nParetoStart];
+        OptSolRow = [OptSolRow nParetoStart];
         %Reassign the line widths because so many pareto solutions
         vLineWidth = [1 1.5 2 2]';
         
@@ -542,7 +542,7 @@ if blAddPareto == 1 %Changes for plotting a multi-objective problem
     mARet = [mARet;-ones(1,nD)];
     vBRet = [vBRet;-sum(vBRet(1:3))];
     mAxisBounds = [900000 0 zeros(1,39); 1.1e6 16000 16000*ones(1,39)];
-    lNearOptConstraint = [lNearOptConstraint; length(vBRet)];
+    lNearOptConstraint = [lNearOptConstraint; length(vBRet)]';
     lShowInsetPlot = 1;
 else %strip out pareto solutions and changes to plot a single-objective problem  
     mAxisBounds = [900000 zeros(1,39); 1.3e6 13000*ones(1,39)];    
@@ -560,9 +560,9 @@ rBack = cumsum(rToKeep); %Reverse mapping
 mGroupData = [vGroupShort num2cell(ones(length(vGroupShort),1)) num2cell(vLineWidth(vGroupUse==1))];
 
 %Define the optional parameters needed to plot in parallel coordinates
-vParams = {'Tolerance',Gamma,'fontsize',20,'GroupToHighlight',iGroupToHighlight,'mActCat',vLabelLong,'vGroup',vRowCatLabel(rToKeep),'mGroupData',mGroupData, ...
+vParams = {'Tolerance',Gamma,'FontSize',20,'GroupToHighlight',iGroupToHighlight,'mActCat',vLabelLong(:,[1:2]),'vGroup',vRowCatLabel(rToKeep),'mGroupData',mGroupData, ...
        'vObjLabels',vObjLabels,'vXLabels',vLabelFull,'yAxisLabels',{'Removal Cost ($)' 'Phosphorus Removal (kg)'},'AMat',mARet, ...
-       'Brhs', vBRet,'cFunc',cV,'AxisScales','custom',[1 1],mAxisBounds,'NumTicks',5,'NearOptConstraint',lNearOptConstraint,'OptSolRow', rBack(OptSolRow), ...
+       'Brhs', vBRet,'cFunc',cV,'AxisScales','custom',[1 1],mAxisBounds,'NumTicks',5,'NearOptConstraint',lNearOptConstraint,'OptSolRow', rBack(OptSolRow)', ...
        'StartTab',1,'GenerateType',3,'GenerateMethod',2,'ShowObjsDiffColor',0,'ShowGroupLabels',1,'NumSamples',pIntOrig,'HideCheckboxes',1 ...
        'ShowControls',0,'ShowInsetPlot',lShowInsetPlot};
    

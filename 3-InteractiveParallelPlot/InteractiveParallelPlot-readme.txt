@@ -7,13 +7,15 @@ The InteractiveParallelPlot folder contains the Matlab functions to create a Par
 where mObjs is a p by nO matrix of objective function values for the nO objectives and p alternatives (a row is an alternative), mDecisions is a p by n matrix of n decision variable values for the p alternatives (together, a row in mObjs and in mDecisions define the objective and decision variable components of an alternative). OptionList is an optional cell array of paired items {‘parameter1’,value1,’parameter2’,value2, … } that control numerous plotting, rending, interaction, and other options. See full documentation in the header of file nearoptplotmo2.m. These options include providing data that define the problem and near optimal region (constraint set, objective functions, tolerance, etc…) which the figure can then use to streamline the process to update the model formulation and generate new alternatives.
 To use this tool, you will also need to download all the files in the GenerateAlternatives folder.
 
-Interaction controls are organized into five categories on the plot:
+Interaction controls are organized into six categories on the plot:
 
-A) Plot Data menu. Click Save Data (Cntrl-D) to save all data and current plot settings to the base workspace. The command window will also show the command to enter to re-create the figure.
+A) Plot Data menu. Click Save Data (Cntrl-D) to save all data and current plot settings to the base workspace. The command window will also show the command to enter to re-create the figure. Click Load Data... (Cntrl-L) to load data for additional alternatives from the base workspace into the figure. Click Print to PDF... to print a high-resolution version of the current figure to a PDF file you specify.
 
 B) Controls Menu. Menu items to show/hide various plot features and controls including the control panel at right, sliders, checkboxes, and grouping table at bottom.
 
-C) Display tab. Controls the  rendering and formatting of plotted data including
+C) Update Formulation Menu. Menu items to streamline the process to add one or more new optimization model objective functions or constraints and generate new alternatives from the updated formulation (must provide description of existing model formulation within the OptionList, see above).
+
+D) Display tab. Controls the  rendering and formatting of plotted data including
 
 	o Font size – font size for text labels
 
@@ -21,7 +23,7 @@ C) Display tab. Controls the  rendering and formatting of plotted data including
 
 	o Group Traces to control the order and rending of groups of traces. Groups are specified by the optional parameter vGroup (a p x 1 vector). The group with the highest Order # is plotted last (on top). Use the Highlight Group selection box to assign a group to highlight (plot last in thick black lines).
 
-D) Color Ramp tab. Add a color ramp to one axis to facilitate comparing values between that axis and each other axis.
+E) Color Ramp tab. Add a color ramp to one axis to facilitate comparing values between that axis and each other axis.
 
 	o On the plot, check the axis for which to color ramp values.
 
@@ -31,7 +33,7 @@ D) Color Ramp tab. Add a color ramp to one axis to facilitate comparing values b
 
 	o Check the Ramp color box. The traces will re-color, a color ramp will appear on the checked axis (colors on other axes will vary depending on the relationship with the selected axis). Below the color ramp controls, new checkboxes will appear that define the ranges for each color band in the ramp (both as an absolute value and % of the value associated with the darkest band). Uncheck a box to hide traces for the color band.
 
-E) Interact tab. Controls to explore the near-optimal region shown on the plot and further defined by the optional data:
+F) Interact tab. Controls to explore the near-optimal region shown on the plot and further defined by the optional data:
     - For linear programs in Matlab: AMat, Brhs, cFunc, NearOptConstraint, and OptSolRow provided as input to the function in OptionList. The first three parameters define the model constraints and objective functions while the 4th and 5th paramters identify the near-optimal tolerance constraint within the constraint set and row in the data set that is the optimal solution (see documentation in nearoptplotmo2.m).
     - For models written in the General Algebraic Modeling System (GAMS) : sGamsFile (name of the gams file with the model)
 
@@ -58,5 +60,7 @@ The interactive tools are:
 
 
 Finally, mouse over any axis to read the value in real units.
+
+Again, all of the above interactive features can also be supplied as optional parameters in OptionList so that the plot opens with the feature active. See further documentation of OptionList within the header of the file nearoptplotmo2.m.
 
 All the other files in this folder are called by nearoptplotmo2.m to produce a plot. See further descriptions in the file headers.

@@ -6,7 +6,7 @@ Rosenberg-NearOptimalWaterResourcesDecisionMaking-Aug2013.pdf : original version
 
 Rosenberg-NearOptimalWaterResourcesDecisionMaking-Aug2014.pdf : revised version of the manuscript re-submitted to Water Resources Research in August 2014 that addresses reviewer comments.
 
-Rosenberg-ResponseLetter-NearOptimal2-Aug2014.pdf : Letter listing reviewer comments, author responses and descritions of changes made in the paper to address the comments.
+Rosenberg-ResponseLetter-NearOptimal2-Aug2014.pdf : Letter listing reviewer comments, author responses and descritions of changes made in the August, 2014 version of the paper to address the comments.
 
 
 Within the ScriptsForPaper folder:
@@ -15,7 +15,7 @@ Within the ScriptsForPaper folder:
 
 	>> FigGenForNearOptPaper
 
-Additional directions to interactively generate Figures 4 and 7 from Figure 3, and Figure 6 from Figure 7 are listed in comments in the .m file. 
+Additional directions to interactively generate Figures 4, 5, 6, and 7 from Figure 3 are listed in comments in the .m file. Figure 5 can also be automatically generated.
 
 - Fig1_FeasibleNearOptCompare.m : Matlab script to generate Figure 1 in the revised paper. See Fig_GenForNearOptPaper.m for the parameter settings used for the paper figure.
 

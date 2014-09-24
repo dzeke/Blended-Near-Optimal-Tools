@@ -118,12 +118,12 @@ function LoadAmmanJordan(GDXFile,NumAlts)
     %Color the axis labels in blue (New supply) and red (water
     %conservation)
     mColorBlue2Red = OSUColorRamps('BlueToRed18Step');
-    mColorAxisLabels = zeros(2,2,3);
-    mColorAxisLabels(1,:,:) = mColorBlue2Red(1:2,:);
-    mColorAxisLabels(2,:,:) = flipud(mColorBlue2Red(17:18,:));
+    mColorAxisLabels = zeros(2,1,3);
+    mColorAxisLabels(1,:,:) = mColorBlue2Red(1,:);
+    mColorAxisLabels(2,:,:) = flipud(mColorBlue2Red(18,:));
                                                                                                       
     %Plot with nearoptplotmo2
-    vParams = {'Tolerance',Gamma,'fontsize',21,'GroupToHighlight',vGroupText{1},'mActCat',mActCats, ...
+    vParams = {'Tolerance',Gamma,'FontSize',21,'GroupToHighlight',vGroupText{1},'mActCat',mActCats(:,1), ...
                 'vFixed',vFixed,'vFixedVals',vFixedVals, ...
                 'vGroup',vGroupText(vModelError==0),'vObjLabels',{'Expected Cost'}, ...
                 'vXLabels',vActionsLong,'vXLabelsShort',vActNew, ...

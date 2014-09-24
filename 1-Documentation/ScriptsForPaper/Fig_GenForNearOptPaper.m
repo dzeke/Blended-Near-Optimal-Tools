@@ -6,8 +6,9 @@
 % Water Resources Research. Submitted August 2014
 %
 % The script automatically generates Figures 1, 2, 3, and 5.
-% The script provides  in comments instructions to interactively produce
+% The script also provides in-comment instructions to interactively produce
 %   - Figure 4 from Figure 3
+%   - Figure 5 from Figure 3
 %   - Figure 6 from Figure 5
 %   - Figure 7 from Figure 3
 %
@@ -114,15 +115,109 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 3. Compore optimal solut
 % updated multi-objective formulation in linked objective-decision spaces (main parallel coordinate plot) and 
 % objective space (inset Cartesian plot).
 %
+% Automatically Generate
 [mResult nO vParams] = LoadEchoGamsResults('WQNE_outG6.gdx',3,2500,1); %same as Figure 3 but last parameter changed to 1
 set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi-objective problem');
+
+% Alternative interactive steps to streamline the process to add a new objective and update the model formulation
+%   1. Generate Figure 3. At the commnad prompt paste:
+%          >> [mResult nO vParams] = NearOptimalLP2('WQNE_outG6.gdx',3,2500,0);
+%   2. Once the figure finally loads, click the Update Formulation menu,
+%      and select Add new objective(s).
+%   3. In the Add New Objective(s) window, enter data for a single new
+%      objective to maximize the mass of phosphorus removed. Enter the inputs
+%      as:
+%        - Number of new objectives: 1
+%        - New objective function coefficients: ones(1,39)
+%        - Labels: {'Phos. removed'}
+%        - Units of measurement: {'kg'}
+%        - Direction: {'max'}
+%        - Near-optimal tolernace: 0.5
+%        - Plot limits: [0; 18000]
+%
+%      Here, there is one new objective, the coefficients represent a row
+%      vector of ones where every decision variable contributes equally to the
+%      mass of phosphorus removed, the objective will be labeled 'Phos. removed' and quantified in kg, a new
+%      constraint will be added to the formulation that requires removal
+%      greater than 0.5*the maximumal removal (to prevent interaction with the existing near-optimal constraint
+%      for the first cost removal objective, and the new objective will be
+%      plotted between the limits of 0 and 18000 kg.
+%
+%        - At the bottom, click OK and Matlab will update the model
+%          formulation, sample new alternatives, and add them as purple lines to the plot.
+%
+%   4. Format the plot.
+%        - From the Controls menu, uncheck Hide all controls. The controls
+%          menu will appear at the right.
+%        - Click the Display tab. At the bottom is a listing of the groups.
+%        - Enter new numbers in the Ord box so the group orders become:
+%           + 3 Near-optimal (the original alternatives sampled from the single-objective formulation)
+%           + 1 Near-optimal_Resample (the new alternatives sampled from the multi-objective formulation)
+%           + 2 MGA (Modeling to generate alternatives loaded when Figure 3 was generated)
+%          Then click the Reorder Groups button. The Near-optimal group
+%          will now appear third in the list in peach and the lines on top.
+%        - Merge the NewOpt (optimal solution for the new objective) and Optimum (optimum solution for the original objective)
+%          groups into a single Pareto group
+%           + Unclick all the groups except those groups.
+%           + Rename the first group Pareto
+%           + Click the Merge Checked Groups button
+%        	+ Set the Highlight Group Button to Pareto and the two pareto
+%        	solutions will plot on top in thick black.
+%        - From the Controls menu, select Show inset plot to make the
+%           pareto-tradeoff inset plot visible. The plot shows the two objectives, two
+%           pareto solutions at the corners and the newly sampled alternatives
+%           (green triangels) well distrubted in the pareto objective space.
+%           The alternatives sampled originally for only one objective (peach crosses) are less well
+%           distributed in the pareto space.
+%        - Uncheck the 3rd group (peach Near-optimal) and click the Show
+%           Checked Groups button. Only the pareto solutions, newly-sampled and
+%           MGA alternatives will show.
+%    5. To load more intermediary pareto solutions between the two
+%       extreme solutions:
+%        - From the Plot Data menu, select Save data to save the model data
+%           back to the Base Workspace.
+%        - At the Matlab command prompt, retrieve the model constraints, objective function, and near-optimal data from
+%           parameters #36, 38, and 40 in no_vargs. i.e.,
+%
+%            >> Amat = no_vargs{36};
+%            >> Brhs = no_vargs{38};
+%            >> cFunc = no_vargs{40};
+%            >> Tolerance = no_vargs{4};
+%            >> NearOptConstraint = no_vargs{74};
+%            >> OptSols = no_vargs{76};
+%
+%        - Update the right-hand side coefficients for the rows that
+%        represent near-optimal tolerance constraints:
+%
+%            >> Brhs(NearOptConstraint) = sign(Brhs(NearOptConstraint)).*Tolerance'.*diag(no_mObjs(OptSols,:))
+%
+%             The sign preserves the direction of the optimization and the
+%             diag pulls out the diagnal value from the objective function
+%             value.
+%
+%        - Use the Matlab linprog function to calculate pareto-optimal
+%           solutions such as by the constraint method or another pareto solution generation method.
+%        - Organize results from the prior step into two matrices where
+%           each of the nNew rowd represents a pareto solution.
+%           + mObjPareto : nNew x 2 (values for objective functions 1 and 2
+%               in columns 1 and 2)
+%           + mDecPareto : nNew x 39 (values for each decision variable in
+%               columns 1..39).
+%        - Back in the Figure window, from the Plot Data menu, select Load
+%        Data.... In the Load Data window that opens, enter:
+%           + New objective function values: mObjPareto
+%           + New decision varaible values: mDecPareto
+%           + Group name(s): 'Pareto'
+%
+%           + Then click OK and the new pareto solutions will be shown on
+%           the plot.
+
 
 %%
 % #### Figure 6 ####
 % Sub-region of near-optimal alternatives that remove large amounts of phosphorus (purple lines and markers) but 
 % use more varied locations and practices  than pareto solutions (orange lines and triangles).   
 %
-    %[mResult nO vParams] = NearOptimalLP2('WQNE_outG6.gdx',3,2500,1); %Generate Figure 5
  
 % Interactive Steps to generate alternatives that remove a lot of phosphorus
 %   1. Generate Figure 5. At the commnad prompt paste:
@@ -175,8 +270,8 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi
 %        2ide it)
 %        - Uncheck the MGA group (to h
 %        - Click the Reorder Groups button and the Tolerance 1.25 group
-%        will plot behind the Random Interior group and it possible to see
-%        the effects of expanding from 1.10 (Random Interior) to 1.25.
+%        will plot behind the Near-optimal group and it possible to see
+%        the effects of expanding the near-optimal tolerance from 1.10 (original) to 1.25 (new group).
 %   6. To show the color ramp of effects of all changes from 1.0 to 1.25:
 %        - Click the Color Ramp tab
 %        - Enter the # Color classes as 5
