@@ -201,6 +201,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %           the nF, 2*nF, 3*nF, etc. rows. The final three columns
 %           represent RGB values (Default is OSU Stepped Sequential scheme)
 %
+%     mColorYScales = a 2 x 3 matrix indicating the colors to use for the
+%           ticks, Y-axis scales, and labels on the far right (row 1) and left (row 2) of the plot.
+%           (Default values are color specified in mColor(1,1:2,3,:))
+%
 %     mHighlightColor = a 1 by 3 matrix indicating the colors to use for
 %           highlighted lines on the plot (Group values =
 %           GroupToHightlight). (Default value is Black [0 0 0])
@@ -214,6 +218,15 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %           the parallel coordinate axes labels that groups axes. 0 To high. Can
 %           also be set from the Controls=>Show group labels menu option.
 %           (Default Value: 0 [hide group labels]).
+%
+%     ShowLegend =  Controls whether to show the legend of traces. Three options:
+%           OnAll - show all the time regardless of the state of
+%                   ShowControls
+%           OnHideControls - only show when ShowControls is set 0 (hide
+%               controls)
+%           Off - off all the time regardless of state.
+%           Default value: OnHideControls. Note the legend will not show
+%           when the Pareto Inset is shown.
 
 %     ShowObjsDiffColor = boolean with a value of 1 to show the
 %           objective function axes values, if they exist, in a different color
@@ -347,6 +360,13 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %           normalized units [left bottom width height]. The width leaves room
 %           at the right for the control tabs.
 %           (Default of [0.100 0.615 0.47 0.6182 - yBottom + 0.3068])
+%
+%     YAxisMargins = 1 x 2 vector that specifies the margin between the left 
+%           YAxis ticks and labels and the left-most parallel axis (1st value) and
+%           and the right-most parallel axes and right YAxis ticks and labels.
+%           Expressed as a fraction of the parallel axis spacing. Default
+%           value: no spacing on left and 1/2 the axes spacing on the right [0 0.5].
+%           A single value gives the same margin on the left and right.
 %
 %     PanelWidth = width of panel of controls at the far right in
 %           pixels. This width will overide the width setting in
@@ -512,6 +532,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     vGroupOrder = [];
     mGroupData = {};
     mColors = []; mColorsAxisLabels = []; lShowObjsDiffColor = 1; 
+    mColorYScales = [];
     mHighlightColor=[0 0 0];
     
     vMaxValues = max(mDecisions);
@@ -530,9 +551,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     yBottom = 0.47;
     PlotPosition = [0.100 yBottom 0.615 0.6182 - yBottom + 0.3068];
+    YAxisMargins = [0 0.5];
     PanelWidth = 60; %Characters; PanelWidth = 285; %pixel
     
-    ShowControls = 1; lShowGroupLabels = 0; ShowInsetPlot = 0;
+    cLegendOptions = {'Off','OnHideControls','OnAll'};
+    ShowControls = 1; lShowGroupLabels = 0; ShowInsetPlot = 0; ShowLegend = cLegendOptions{2};
     
     ButtonText = {'Interact' 'Color Ramp' 'Display'};
     StartTab = 3;
@@ -747,6 +770,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 mColorsAxisLabels = varargin{count+1};
                 count=count+1;
                 
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'mColorYScales'))
+                mColorYScales = varargin{count+1};
+                count=count+1;
+                
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'mHighlightColor'))
                 if (size(varargin{count+1},2) == 3)
                    mHighlightColor = varargin{count+1};
@@ -825,6 +852,22 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 end
                 count=count+1;
                 
+            elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'YAxisMargins'))
+                
+                YAxisMarginsTemp = varargin{count+1};
+                              
+                if (isnumeric(varargin{count+1})) && (size(YAxisMarginsTemp,2) <= 2) && (YAxisMarginsTemp(1)>=0) && ((size(YAxisMarginsTemp,2) == 2) && (YAxisMarginsTemp(2)>=0))
+                    if size(YAxisMarginsTemp,2)==1
+                        YAxisMargins = [YAxisMarginsTemp YAxisMarginsTemp];
+                    else
+                        YAxisMargins = YAxisMarginsTemp;
+                    end
+                else
+                    warnmsg = ['nearoptplotmo2: Error with YAxisMargins. Continuing with default value.'];
+                    warning(warnmsg)
+                end
+                count=count+1;              
+                
              elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'PanelWidth'))
                               
                 if (isnumeric(varargin{count+1}))
@@ -882,6 +925,14 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
                 count=count+1;       
                 
+             elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'ShowLegend'))                
+                ShowLegendTemp = varargin{count+1};
+                if ismember(lower(ShowLegendTemp),lower(cLegendOptions))
+                    ShowLegend=ShowLegendTemp;
+                else
+                    warning(['nearoptplotmo2: ShowLegend setting ', ShowLegendTemp, ' not recognized. Ignoring. Proceeding with default ',ShowLegend])
+                end
+                count=count+1;                      
                 
             elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'ShowGroupLabels'))
                 lShowGroupLabels = varargin{count+1};
@@ -1172,6 +1223,20 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     mColorChoices = mColorFull(:,nF,:);
     
+    %Error checking on colors for left and right ticks and axis labels
+    if ~isempty(mColorYScales)
+        nCTs = size(mColorYScales);
+        if (length(nCTs)~=2) || (nCTs(1) ~= 2) || (nCTs(2) ~= 3) 
+            colorerrormsg = sprintf('mColorYScales is of incorrect size. Must be 2 x 3 matrix where row 1 is for left ticks, row 2 is for right ticks, 3=RGB values. Using default colors.');
+            warning(colorerrormsg)
+            mColorYScales=[];
+        end
+    end   
+    
+    if isempty(mColorYScales)
+       mColorYScales = reshape(mColors(1,1:2,3,:),2,3); 
+    end
+    
     % Error checking on the precision -- round to nearest integer
     Precision = round(Precision);
     
@@ -1217,14 +1282,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     yBottom = PlotPosition(2);
     yHeight = PlotPosition(4);
     PlotPosition(3) = xWidth;
-        
-    if nO==0
-        vColorLeftScale = mColors(1,1,2,:);
-    else
-        vColorLeftScale = mColors(1,2,2,:);
-    end
     
-    plot2 = axes('Parent',Figure2,'FontSize',FontSize-4,'Units','normalized','Position',[xLeft yBottom xWidth yHeight],'YColor',vColorLeftScale,'box','on');
+    plot2 = axes('Parent',Figure2,'FontSize',FontSize-4,'Units','normalized','Position',[xLeft yBottom xWidth yHeight],'YColor',mColorYScales(2,:),'box','on');
     
     hold on
     
@@ -1281,16 +1340,17 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             
     end
     
+    vLims = [1-YAxisMargins(1) n+YAxisMargins(2)];
     %set the limits and get the ticks   
     if 1
-        set(plot2,'xLim',[1 n+0.5]);
+        set(plot2,'xLim',vLims);
         %dTemp = plot([ymin ymaxdec]);
         %yLimsStart = get(plot2,'yLim');
         %dticks = [yLimsStart(1):(yLimsStart(2)-yLimsStart(1))/(NumTicks-1):yLimsStart(2)];
         %delete(dTemp);
     else %old approach
         dticks = [ymin:(ymaxdec-ymin)/(NumTicks(1)-1):ymaxdec];
-        set(plot2,'yLim',[ymin ymaxdec],'xLim',[1 n+0.5],'ytick',dticks,'yticklabel',dticks);
+        set(plot2,'yLim',[ymin ymaxdec],'xLim',vLims,'ytick',dticks,'yticklabel',dticks);
     end
     %dticks = str2num(get(plot2,'yticklabel'));   
     
@@ -1662,6 +1722,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     yTableHeight = max([yBottom-abs(yHeight*mMaxExtent)-yBottomTable-0.005; 0.02*(sum(FontSize-4-12+[1:size(mActCat,2)-1])); 0.001]);
     %position the table below the largest axis text label
     vTablePosition = [xLeft+(nO-1+0.5-.0025)/(n-0.5)*xWidth yBottomTable xWidth*(n-nO+0.25)/(n-0.5) yTableHeight];
+    %vTablePosition = [xLeft+(YAxisMargins(1)+nO-1+0.5-.0025)/(n-1+sum(YAxisMargins))*xWidth yBottomTable xWidth*(nD)/(n+sum(YAxisMargins)) yTableHeight];
     lFieldExclude = 0;
     
     if lFieldExclude == 0
@@ -1739,11 +1800,9 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     ax2 = axes('Position',get(plot2,'Position'),...
            'YAxisLocation','right',...
            'Color','none',...
-           'YColor',mColors(1,1,2,:));
-       
-    [ymin ymax];
-                
-    set(ax2,'yLim',[ymin ymax],'xLim',[1 n+0.5],'Xticklabel',[],'Xtick',[],'fontsize',FontSize-4);
+           'YColor',mColorYScales(1,:));
+   
+    set(ax2,'yLim',[ymin ymax],'xLim',vLims,'Xticklabel',[],'Xtick',[],'fontsize',FontSize-4);
     RightTicks = str2num(get(ax2,'YTickLabel'));
     class(RightTicks);
     RightTicks;
@@ -1819,7 +1878,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 'vXLabels' vXLabels 'vXLabelsShort' vXLabelsShort 'yAxisLabels' yAxisLabels 'AxisScales' AxisScales 'BaseAxis' BaseAxis 'mLims' mLims ...
                 'TickSize' TickSize 'sGamsFile' sGamsFile 'StartTab' StartTab, 'GenerateType' GenType 'GenerateMethod' GenMethod ...
                 'HideSliders' HideSliders 'HideCheckboxes' HideCheckboxes 'NearOptConstraint' NearOptConstraint 'OptSolRow' OptSolRow ...
-                'mColorsAxisLabels' mColorsAxisLabels};
+                'mColorsAxisLabels' mColorsAxisLabels 'mColorYScales' mColorYScales 'YAxisMargins' YAxisMargins};
 
          %Also set app variables for the functon inputs and computations
          setappdata(hWindReturn,'varargs',vararg_curr);
@@ -1869,6 +1928,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
        uimShowObjsDiffColor = uimenu(cMenu,'Label','Contrast colors for objectives','enable',sEnableObjColors,'checked',Boolean2Enabled(lObjColorsVis),'Separator','on');
        uimGroupLabels = uimenu(cMenu,'Label','Show group labels','enable',lShowGroupLabelsEnable); %Don't set check value here; only later should lShowGroupLabels=1 and we trigger the event callback
        uimShowInset =   uimenu(cMenu,'Label','Show inset plot','enable',Boolean2Enabled(nO==2)); %Don't set check value here; only later should ShowInset==1 and we trigger the event callback
+       uimShowLegend =  uimenu(cMenu,'Label','Show legend'); 
+       uimLegendOptions = zeros(numel(cLegendOptions),1);
+       for i=1:numel(cLegendOptions) %Mutually exclusive
+          uimLegendOptions(i) = uimenu(uimShowLegend,'Label',cLegendOptions{i},'Checked',Boolean2Enabled(strcmpi(cLegendOptions{i},ShowLegend)),'Callback',{@UpdateLegendMenu,i,numel(cLegendOptions)}); 
+       end
 
        %Menu items to go directly to the tabs
        uimTab = zeros(length(ButtonText),1);
@@ -2006,7 +2070,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     %Position Checkboxes
     for i=1:n
-        cbChecks(i) = uicontrol('Parent',Figure2,'Style', 'checkbox', 'Units','normalized','Position',[xLeft+(i-1)*xWidth/(n-0.5) yBottom 0.02 0.02],'fontsize', fontsizecntls,'Value',vFixed(i),...
+        cbChecks(i) = uicontrol('Parent',Figure2,'Style', 'checkbox', 'Units','normalized','Position',[xLeft+(YAxisMargins(1)+i-1)*xWidth/(n-1+sum(YAxisMargins)) yBottom 0.02 0.02],'fontsize', fontsizecntls,'Value',vFixed(i),...
                             'Callback',{@AxisChecked,cbChecks,i});%
         set(cbChecks(i),'units','characters');
         vPosCb = get(cbChecks(i),'Position');
@@ -2416,7 +2480,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                         'ColorRamp' cbRampColor 'RampDirection' cbDirection 'NumClasses' txtNumClasses 'cbGenType' cbGenerateType 'cbGenMethod' cbGenerateMethod ...
                         'CurrentRecord' txtCurrRec 'TotalRecords' lblOfX 'GroupToHightlightBut' GroupToHighlightButton 'HideControls' uimShowAll ...
                         'txtFontSize' txtFontSize 'ShowCurrRecord' uimShowCurrRec 'ShowFilteredAlts' uimShowFiltered, 'ShowObjsDiffColor' uimShowObjsDiffColor...
-                        'ShowGroupLabels' uimGroupLabels,'ShowInsetPlot',uimShowInset}; 
+                        'ShowGroupLabels' uimGroupLabels,'ShowInsetPlot',uimShowInset,'LegendOptions',uimLegendOptions}; 
 
     %Also set as an app variable
     setappdata(hWindReturn,'hControls',control_handles);                
@@ -2501,14 +2565,21 @@ if lShowGroupLabels == 1 %Trigger the function to show the table
 else %Just update the table position
     PositionGroupLabelsTable(hTabContainer, nO, hTexts, plot2)
 end
-if ShowControls == 0 %Trigger the function to hide the controls   
+
+hLegend = 0; %Handle for future legend
+
+if ShowControls == 0 %Trigger the function to hide the controls and possibly the legend 
     ShowAllControls(uimShowAll,0,ControlFrame,[plot2 ax2],cbChecks,sSlider,hTabContainer,xPanelWidthNorm+rMarginPanel);
+else
+    UpdateLegend;
 end
 if HideSliders==0
    UpdateHighlightedTraces;
 elseif HideCheckboxes==1
    ToggleCheckBoxVisibility(uimHideChecks,0,cbChecks,hTexts,hTabContainer)
 end
+
+
     
 %Create the cartesian inset graph
 if nO==2
@@ -3083,22 +3154,18 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         vCheckPos = get(cChecks(1),'Position');
 
         for i=1:nControls
-            vCheckPos(1)=xLeft+(i-1)*xWidth/(nControls-0.5)-0.005;
+            vCheckPos(1)=xLeft+(YAxisMargins(1)+i-1)*xWidth/(nControls-1+sum(YAxisMargins))-0.005;
 
             set(cChecks(i),'Position',vCheckPos);
             if sSlides(i)~=0
                 vSliderPos = get(sSlides(i),'Position');
-                vSliderPos(1)=xLeft+(i-1)*xWidth/(nSlides-0.5)-0.005;
+                vSliderPos(1)=xLeft+(YAxisMargins(1)+i-1)*xWidth/(nSlides-1+sum(YAxisMargins))-0.005;
                 set(sSlides(i),'Position',vSliderPos);
             end
         end
 
         PositionGroupLabelsTable(hTabContainer, nO, hTexts, hAxes(1));
-
-        %xPosTable = get(hTabContainer,'Position');
-        %xPosTable(3) = xWidth*(nControls-0.5)/(nControls-1+0.5);
-        %set(hTabContainer,'Position',xPosTable);
-
+        UpdateLegend;
     end
 
     function HideCheckboxesOld(hind,event,cbChecks,hTexts,hTabContainer,yPosUnchecked,yPosChecked,yPosGroupOffset, yPosGroupOffsetUnits)
@@ -3181,6 +3248,45 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         UpdateHighlightedTraces
     end
 
+    function UpdateLegendMenu(hind,event,i,Total)
+        % Handler for when a legend menu option is selected.
+        % Makes sure only the current menu option i is selected
+        % Then calls the update legend handler
+        
+        set(uimLegendOptions([1:Total] ~= i),'Checked','off');
+        set(uimLegendOptions(i),'Checked','on');
+        UpdateLegend;
+    end
+
+    function UpdateLegend
+        % Shows / hides the legend depending on the settings for
+        %   - ShowLegend
+        %   - ShowControls
+        %   - ShowPareto
+        % Also sets the entries in the legend from the groups checked
+        % (showing)
+        
+        [vParams,hControls] = ReadControls('UpdateLegend',hWindReturn);
+        [cShowLegend,cShowControls,cShowInset, cmGroupData] = aGetField(vParams,{'ShowLegend','ShowControls','ShowInsetPlot', 'mGroupData'});
+        
+        lnU = size(cmGroupData,1);
+        %Construct a handle to the lengend objects
+        hPCTraces = zeros(lnU,1);
+        for i=1:lnU
+            hPCTraces(i) = hPCGroup{i,1}(1);
+        end
+        checkedGroups = cell2mat(cmGroupData(:,2));
+        hLegend = legend(hPCTraces(checkedGroups==1),cmGroupData(checkedGroups==1,1),'FontSize',FontSize-4);
+        
+        % Set visibility
+        visSet = 'show';
+        if (cShowInset==1) || strcmpi(cShowLegend,cLegendOptions{1}) || (strcmpi(cShowLegend,cLegendOptions{2}) && (cShowControls==1))
+            visSet = 'hide';
+        end
+        
+        legend(hLegend,visSet);
+    end
+            
     function ToggleSliders(hind,event)
         % Handler for when the slider menu item is selected
         % If going to show sliders, we also need to show the axis checkboxes
@@ -3255,8 +3361,8 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         
         %Now work from the axis position
         aPosition = get(hAxis,'Position');
-        xLeftTab = aPosition(1)+(nO-1+0.5-.0025)/(n-0.5)*aPosition(3);
-        xWidthTab = aPosition(3)*(n-nO+0.25)/(n-0.5);
+        xLeftTab = aPosition(1)+(YAxisMargins(1)+nO-1+0.5-.0025)/(n-1+sum(YAxisMargins))*aPosition(3);
+        xWidthTab = aPosition(3)*(nD)/(n-1+sum(YAxisMargins));
         vTabPosCur = get(hTabContainer,'Position');
         TabFontSizes = FontSize-4-12+1+[1:lNumFields];
         lTabHeight = sum(TabFontSizes/TabFontSizes(1));
@@ -3366,7 +3472,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             %[i Delta xLeft+(i-1)*xWidth/(n-0.5)-0.005 yBottom+yHeight*(vMins(i)-ymin)/(ymax-ymin) 0.01 yHeight*(vMaxes(i)+Delta-vMins(i))/(ymax-ymin)]
             
             set(vSlidersOut(i),'Min',vMins(i),'Max',vMaxes(i)+Delta,'Value',SliderSetValue,'SliderStep',vSliderStepValue,'Visible',sVis,...
-                    'Units','normalized','Position', [xLeft+(i+Indexes(i)-1)*xWidth/(TotalInds-0.5)-0.005 yBottom+yHeight*(vMins(i)-ymin)/(ymax-ymin) 0.01 yHeight*(vMaxes(i)+Delta-vMins(i))/(ymax-ymin)]);
+                    'Units','normalized','Position', [xLeft+(YAxisMargins(1)+i+Indexes(i)-1)*xWidth/(TotalInds-1+sum(YAxisMargins))-0.005 yBottom+yHeight*(vMins(i)-ymin)/(ymax-ymin) 0.01 yHeight*(vMaxes(i)+Delta-vMins(i))/(ymax-ymin)]);
         end    
 
     end
@@ -3717,6 +3823,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         end
         UpdateSetToControls(0,0,hWindCurr,0,0); 
         UpdateInset;
+        UpdateLegend;
     end
 
     function UpdateSetToControls(hind,but,hWindCurr,direction,magnitude)
@@ -3813,6 +3920,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             set([hInsetPlot hBackBox],'Visible','off');
             set(get(hInsetPlot,'Children'),'Visible','off');
         end 
+        UpdateLegend;
     end
 
     function UpdateInset
@@ -4311,7 +4419,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     nO = size(mObjs,2);
     
     [txtTolerances, txtNumSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,txtGroupThicks,cbGroupChecks,txtGamsFile,cTabs,txtCurrRec,cbGenType,cbGenMethod,cbGroupToHighlight,txtFontSize] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupThicks','GroupChecks','GamsFile','Tabs','CurrentRecord','cbGenType','cbGenMethod','HighlightGroup','txtFontSize'});
-    [uimHideSliders,uimHideChecks, uimHideControls, uimShowCurrRecord, uimShowFiltered, uimShowObjsDiffColor, uimGroupLabels, uimShowInset] = aGetField(hControls,{'HideSliders','HideCheckboxes','HideControls','ShowCurrRecord' 'ShowFilteredAlts' 'ShowObjsDiffColor' 'ShowGroupLabels' 'ShowInsetPlot'});
+    [uimHideSliders,uimHideChecks, uimHideControls, uimShowCurrRecord, uimShowFiltered, uimShowObjsDiffColor, uimGroupLabels, uimShowInset, uimShowLegendOptions] = aGetField(hControls,{'HideSliders','HideCheckboxes','HideControls','ShowCurrRecord' 'ShowFilteredAlts' 'ShowObjsDiffColor' 'ShowGroupLabels' 'ShowInsetPlot' 'LegendOptions'});
     
     %Update the plot
     drawnow; pause(0.1);
@@ -4365,6 +4473,10 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     ShowGroupLabels = Enabled2Boolean(get(uimGroupLabels,'Checked'));
     ShowInsetPlot = Enabled2Boolean(get(uimShowInset,'Checked'));
     
+    LegendOptions = get(uimShowLegendOptions,'Label');
+    LegendChecks = get(uimShowLegendOptions,'checked');
+    ShowLegend = LegendOptions(strcmpi(LegendChecks,'on'));
+    
     %Group to highlight
     lGroupToHighlight = get(cbGroupToHighlight,'Value');
     if lGroupToHighlight <= 1
@@ -4389,7 +4501,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
             'mConvert',mConvert,'StartTab',StartTab,'CurrentRecord',lCurrRecord,'GenerateType',GenType,'GenerateMethod',GenMethod, ...
             'HideSliders',HideSliders,'HideCheckboxes',HideCheckboxes,'GroupToHighlight',GroupToHighlight,'ShowControls',ShowControls,'FontSize',NewFontSize, ...
             'nO',nO,'ShowCurrRecord',ShowCurrRecord, 'ShowFilteredAlts',ShowFilteredAlts, 'ShowObjsDiffColor',ShowObjsDiffColor, ...
-            'ShowGroupLabels', ShowGroupLabels, 'ShowInsetPlot',ShowInsetPlot);
+            'ShowGroupLabels', ShowGroupLabels, 'ShowInsetPlot',ShowInsetPlot,'ShowLegend',ShowLegend);
 end
 
 function [ReturnVal] = GetCheckTxtValue(strCallFunction, txtCntl)
