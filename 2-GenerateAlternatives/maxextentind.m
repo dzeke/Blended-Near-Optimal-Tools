@@ -48,6 +48,9 @@ function [X, vXs] = maxextentind(A,b,options)
 %       current decision variable when that variable's range is being
 %       indentified (keeps fixed values for other variables)
 %       0 => keep all decision variable values fixed
+%
+%   options.Algorithm = the algorithm used to solve the underlying LP
+%       problem. See linprog.m for options. Default is not specified and uses Matlab's default.
 %    
 %   The maximum extent method works as follows:
 %    1. Start with the first decision variable (x1). Solve 2 optimization
@@ -65,6 +68,7 @@ function [X, vXs] = maxextentind(A,b,options)
 %
 % May 1, 2013
 % Updated July 2014 to include fixing decision variables at specified values and the unfixing current decision variable
+% Updated Dec 2014 to allow specifying the algorithm used to solve the underlying LPs
 
 % LICENSING
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
@@ -195,7 +199,14 @@ function [X, vXs] = maxextentind(A,b,options)
     %determine if unfix current decision variable passed
     if (nargin==3) && (isstruct(options)) && isfield(options,'UnfixCurrX')  && ~isempty(options.UnfixCurrX)
         blUnfixCurrX = options.UnfixCurrX;
-    end    
+    end   
+    
+    %Algorithm
+    if (nargin==3) && (isstruct(options)) && isfield(options,'Algorithm')
+        Algorithm = options.Algorithm;
+    else
+        Algorithm = '';
+    end
     
 %% Begin Computations
     
@@ -237,9 +248,13 @@ function [X, vXs] = maxextentind(A,b,options)
                       BeqToUse = Beq(RowsToUse);
                    end
                    
-                   [xmin, fmin, fminexitflag minoutput] = linprog(f,A,b,AeqToUse,BeqToUse,lB,uB,[],struct('maxiter',15000,'Display', 'off'));
+                   LPoptions = struct('maxiter',15000,'Display', 'off');
+                   if ~strcmpi(Algorithm,'')
+                       LPoptions.Algorithm = Algorithm;
+                   end
+                   [xmin, fmin, fminexitflag minoutput] = linprog(f,A,b,AeqToUse,BeqToUse,lB,uB,[],LPoptions);
                    %if fminexitflag > 0
-                      [xmax, fmax, fmaxexitflag maxoutput] = linprog(-f,A,b,AeqToUse,BeqToUse,lB,uB,[],struct('maxiter',15000,'Display', 'off'));
+                      [xmax, fmax, fmaxexitflag maxoutput] = linprog(-f,A,b,AeqToUse,BeqToUse,lB,uB,[],LPoptions);
                       fmax = -fmax;
                    %end
            end

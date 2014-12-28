@@ -21,7 +21,8 @@ function [X] = maxextentgibbs(p,A,b,options)
 %   options.extmethod = method used to find the extends. There are two options
 %      opt = by optimization (default)
 %      linalg = by linear algebra (doesn't work)
-
+%   options.Algorithm = the algorithm used to solve the underlying LP
+%       problems. See linprog.m for options. Default is not specified and uses Matlab's default.
 %    
 %   The maximum extent method works as follows:
 %    1. Start with the first decision variable (x1). Solve 2 optimization
@@ -105,6 +106,16 @@ function [X] = maxextentgibbs(p,A,b,options)
     %max; row 3 - sampled value
     mExt = zeros(3,n);
     
+    %Set up the options structure to use when calling linprog
+    LPOptions = struct('maxiter',3000,'Display','off');
+    %Read in the optional Algorithm parameter
+    if (nargin==3) && (isstruct(options)) && isfield(options,'Algorithm')
+        LPOptions.Algorithm = options.Algorithm;
+    else
+        LPOptions.Algorithm = 'interior-point';
+    end
+    
+       
     %read in the initial starting point, if present
     x0 = [];           
     if isstruct(options) && isfield(options,'x0')
@@ -127,11 +138,11 @@ function [X] = maxextentgibbs(p,A,b,options)
         %We should auto-generate an initial point
         %x0 = maxextent(1,A,b); %just need one seed point, any will do % didn't work very well
         i=1;
-        [x0, fVal, fExitFlag minoutput] = linprog(circshift(eye(n,1),i-1),A,b,[],[],[],[],[],struct('maxiter',3000,'Display','off')); %just need one seed point, any will do
+        [x0, fVal, fExitFlag minoutput] = linprog(circshift(eye(n,1),i-1),A,b,[],[],[],[],[],LPOptions); %just need one seed point, any will do
         while (fExitFlag ~= 1) && (i<=n)
             sprintf('i: %d, flag: %d, error: %s',i,fExitFlag, minoutput.message)
             i=i+1;
-            [x0, fVal, fExitFlag minoutput] = linprog(circshift(eye(n,1),i-1),A,b,[],[],[],[],[],struct('maxiter',3000,'Display','off')); %just need one seed point, any will do
+            [x0, fVal, fExitFlag minoutput] = linprog(circshift(eye(n,1),i-1),A,b,[],[],[],[],[],LPOptions); %just need one seed point, any will do
         end   
         if fExitFlag < 1
             warning('Could not generate an initial point')
@@ -183,8 +194,8 @@ function [X] = maxextentgibbs(p,A,b,options)
                       f=1;
                       Amod = A(:,j);
                                           
-                      [xmin, fmin, fminexitflag] = linprog(f,Amod,Bmod,[],[],[],[],[],struct('maxiter',3000,'Display','off'));
-                       [xmax, fmax, fmaxexitflag] = linprog(-f,Amod,Bmod,[],[],[],[],[],struct('maxiter',3000,'Display','off'));
+                      [xmin, fmin, fminexitflag] = linprog(f,Amod,Bmod,[],[],[],[],[],LPOptions);
+                       [xmax, fmax, fmaxexitflag] = linprog(-f,Amod,Bmod,[],[],[],[],[],LPOptions);
                        fmax = -fmax; 
                end
                                       
@@ -192,8 +203,9 @@ function [X] = maxextentgibbs(p,A,b,options)
            %Step 2. Uniformly random sample within the fmin..fmax range
            if  (j==1) || ((fmaxexitflag>0) && (fminexitflag>0))
                %sprintf('p: %d, j: %d, fmin: %d, fmax: %d, min flag: %d, max flag: %d',i,j,fmin,fmax,fminexitflag, fmaxexitflag)
+ 
                 xprev(j) = fmin + (fmax-fmin)*rand;
-                
+
                 mExt(1,j) = fmin;
                 mExt(2,j) = fmax;
                 

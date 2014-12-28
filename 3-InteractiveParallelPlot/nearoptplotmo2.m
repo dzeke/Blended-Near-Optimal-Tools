@@ -359,7 +359,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %     PlotPosition = position of plot within the figure in standard
 %           normalized units [left bottom width height]. The width leaves room
 %           at the right for the control tabs.
-%           (Default of [0.100 0.615 0.47 0.6182 - yBottom + 0.3068])
+%           (Default of [0.100 0.47 .615 0.6182 - yBottom + 0.3068])
 %
 %     YAxisMargins = 1 x 2 vector that specifies the margin between the left 
 %           YAxis ticks and labels and the left-most parallel axis (1st value) and
@@ -846,6 +846,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
                 if (length(varargin{count+1})==4)
                     PlotPosition = varargin{count+1};
+                    yBottom = PlotPosition(2);
                 else
                     warnmsg = ['nearoptplotmo2: PlotPosition has', num2str(length(PlotPosition)), ' but needs 4. Continuing with default position.'];
                     warning(warnmsg)
@@ -1665,21 +1666,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %% Start Working on the Rows/lines
     % Rows are members of a group (as specified by vGroup
     % and each group is plotted in a different color
-    
-    %mColorChoices = [0.142 0 0.85; 0.65 0 0.13;0 0.737 0]; % blue-red-green
-    if 0  
-    mColorMatrix = zeros(5,5,3);
-    mColorMatrix(1,:,:) = [0.6	0.06	0.06; 0.7	0.175	0.175; 0.8	0.32	0.32; 0.9	0.495	0.495; 1	0.7	0.7]; %red
-    mColorMatrix(2,:,:) = [0.6	0.33	0.06; 0.7	0.438	0.175; 0.8	0.56	0.32; 0.9	0.697	0.495; 1	0.85	0.7]; % orange
-    mColorMatrix(3,:,:) = [0.42	0.6	0.06; 0.525	0.7	0.175; 0.64	0.8	0.32; 0.765	0.9	0.495; 0.9	1	0.7]; % green
-    mColorMatrix(4,:,:) = [0.06	0.42	0.6; 0.175	0.525	0.7; 0.32	0.64	0.8; 0.495	0.765	0.9; 0.7	0.9	1]; % blue
-    mColorMatrix(5,:,:) = [0.15	0.06	0.6; 0.262	0.175	0.7; 0.4	0.32	0.8; 0.562	0.495	0.9;0.75	0.7	1]; %purple
-
-    %instead build orange-purple-red
-    mColorChoices = [mColorMatrix(2,3,:);mColorMatrix(5,3,:);mColorMatrix(1,3,:)];
-    mColorFull = [mColorMatrix(2,:,:);mColorMatrix(5,:,:);mColorMatrix(1,:,:)];
-    end
-    
+        
     lMainClass = 1;
     mTextPos = zeros(n,4);
     chHeight = 1.3; %in characters
@@ -1699,7 +1686,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             end
             set(h3,'linewidth',0.5,'color',lLineColor);
             hTexts(i) = text(i,0,vAxisLabelsAll{i},'fontsize',FontSize-6,'HorizontalAlignment', 'right','color',vColor,'VerticalAlignment','middle','Rotation',90);
-           %ymin-6*(ymax-ymin)/100
+            %set(hTexts(i),'EdgeColor',[0 0 0]); %for help in placing group labels box below
+            %ymin-6*(ymax-ymin)/100
            %Shift the text down belwo the checkbox
             strCurrUnits = get(hTexts(i),'Units');
             set(hTexts(i),'Units','characters');
@@ -1722,6 +1710,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     yTableHeight = max([yBottom-abs(yHeight*mMaxExtent)-yBottomTable-0.005; 0.02*(sum(FontSize-4-12+[1:size(mActCat,2)-1])); 0.001]);
     %position the table below the largest axis text label
     vTablePosition = [xLeft+(nO-1+0.5-.0025)/(n-0.5)*xWidth yBottomTable xWidth*(n-nO+0.25)/(n-0.5) yTableHeight];
+    %[yBottomTable yTableHeight]
     %vTablePosition = [xLeft+(YAxisMargins(1)+nO-1+0.5-.0025)/(n-1+sum(YAxisMargins))*xWidth yBottomTable xWidth*(nD)/(n+sum(YAxisMargins)) yTableHeight];
     lFieldExclude = 0;
     
@@ -2097,25 +2086,30 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     NearOptTolerance = zeros(nO,1); %Handles to the near optimal tolerance parameter text inputs for each objective
     sNearOpt = sprintf('Tolerance is the fraction of the optimal objective function value and\n adds a constraint to the underlying optimization problem\nto require alternatives with objective functon values within\nthe specified tolerance. Enter a number > 1 for minimization problems and < 1 for maximization problems.');
     
+    %Label and control to set the top set value axis
+    lblTopAxis = uicontrol('Parent',FiltSols,'Style', 'text','String','1st Decision axis to list (#):', 'Position', [10 vFiltPos(4)-55-16*(sCount+1.75) 175 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
+    txtTopAxis = uicontrol('Parent',FiltSols,'Style', 'edit', 'Position', [175 vFiltPos(4)-55-16*(sCount+1.75)-3 30 20],'fontsize', fontsizecntls-2);
+    set(txtTopAxis,'string',1);
+    
     %Header labels
-    lblSetVals = uicontrol('Parent',FiltSols,'Style', 'text','String','Set value', 'Position', [10 vFiltPos(4)-55-16*(sCount+1.75) 55 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
-    lblAxis = uicontrol('Parent',FiltSols,'Style', 'text','String','Axis name', 'Position', [70 vFiltPos(4)-55-16*(sCount+1.75) 110 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
+    lblSetVals = uicontrol('Parent',FiltSols,'Style', 'text','String','Set value', 'Position', [10 vFiltPos(4)-55-16*(sCount+3) 55 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
+    lblAxis = uicontrol('Parent',FiltSols,'Style', 'text','String','Axis name', 'Position', [70 vFiltPos(4)-55-16*(sCount+3) 110 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
     if nO>1
-        lblNearOptTol = uicontrol('Parent',FiltSols,'Style', 'text','String','Near opt. tol.', 'Position', [70+115 vFiltPos(4)-55-16*(sCount+1.75) 85 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
+        lblNearOptTol = uicontrol('Parent',FiltSols,'Style', 'text','String','Near opt. tol.', 'Position', [70+115 vFiltPos(4)-55-16*(sCount+3) 85 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
     end
     
     for i=1:n
         sCount = sCount+1;
 %        if vShowSliders(i) > 0 
             sVis = 'on';
-            if vFiltPos(4)-55-17*(sCount+1.75) < 0
+            if vFiltPos(4)-55-17*(sCount+3) < 0
                 sVis = 'off'; %Hide sliders that fall outside the box
             end
             
-            txtSliderValue(i) = uicontrol('Parent',FiltSols,'Style', 'edit', 'Position', [10 vFiltPos(4)-55-17*(sCount+1.75) 55 15],'fontsize', fontsizecntls-2, ...
+            txtSliderValue(i) = uicontrol('Parent',FiltSols,'Style', 'edit', 'Position', [10 vFiltPos(4)-55-17*(sCount+3) 55 15],'fontsize', fontsizecntls-2, ...
                     'Visible',sVis,'Callback', {@SetSliderValue,sSlider,mTransformToOrig,i});
 
-            lblSliderValue(i) = uicontrol('Parent',FiltSols,'Style', 'text','String',vAxisLabelsAll{i}, 'Position', [70 vFiltPos(4)-55-17*(sCount+1.75) 110 15], ...
+            lblSliderValue(i) = uicontrol('Parent',FiltSols,'Style', 'text','String',vAxisLabelsAll{i}, 'Position', [70 vFiltPos(4)-55-17*(sCount+3) 110 15], ...
                 'Visible',sVis,'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
             %set(txtSliderValue(i),'String',sprintf('%.2f',get(sSlider(i),'Value')));
             set(txtSliderValue(i),'String',sprintf('%.2f',ConvertPlot2DataUnits(get(sSlider(i),'Value'),mTransformToOrig(:,i))));
@@ -2132,7 +2126,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
        set(sSlider(i),'Callback',{@SetTxtValues,txtSliderValue,mTransformToOrig,i})
        set(txtSliderValue(i),'Callback', {@SetSliderValue,sSlider,mTransformToOrig,i});
     end  
-
+    set(txtTopAxis,'Callback', {@SetAxesInFilterAltsBox,txtSliderValue,lblSliderValue,nO,vFiltPos(4)-55-17*(3),17});
+    
     %Controls to set all sliders to a particular solution
     % Set to specified record #
     lblSetAll = uicontrol('Parent',FiltSols,'Style', 'text','String','Set to:', 'Position', [10 vFiltPos(4)-45 44 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');%[10 lTopSlider-63 60 15]
@@ -2163,9 +2158,9 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         sEnable = 'on';
     end
     
-    GroupToHighlightButton = uicontrol('Parent',FiltSols,'Style', 'pushbutton', 'String', sprintf('Group to\nHighlight'),...
+    GroupToHighlightButton = uicontrol('Parent',FiltSols,'Style', 'pushbutton', 'String', sprintf('Highlight Group'),...
             'Position',[167 vFiltPos(4)-65 87 40] ,'fontsize', fontsizecntls,'enable',sEnable,...
-            'Callback', {@SetSliderValsToRecord,lHighRecord});
+            'Callback', {@SetSliderValsToRecord,lHighRecord},'ToolTipString','Set record number and values to the highlighted group');
             % 'Callback', {@SetAllSliderVals,sSlider,txtSliderValue,mTransformToOrig,2,mPlot(OptGroupInds,:)}); %[150 lTopSlider-65 70 20]
 
     %Tool tips
@@ -2808,7 +2803,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             %AMat and brhs. Use maximum extent functions
             [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue,Aeq,Beq] = UpdateLPMatrix(hWindReturn,nO,1);
             
-            [mResultsValUse,mResCompact] = maxextentind(AMatNew,BrhsNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1)); %'Aeq',Aeq,'Beq',Beq,
+            [mResultsValUse,mResCompact] = maxextentind(AMatNew,BrhsNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1,'Algorithm','simplex')); %'Aeq',Aeq,'Beq',Beq,
             
             if any(isnan(mResultsValUse))
                 warning('Can not calculate maximum extents for current settings. Stopping');
@@ -2826,7 +2821,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
                        
             if (nO>0) && (~isempty(cFunc))
                 %Find the range of objective function values
-                [mResultsValObjs,mResCompObjs] = maxextentind(AMatNew,BrhsNew,struct('objfunc',cFuncFree','Aeq',Aeq,'Beq',Beq));
+                [mResultsValObjs,mResCompObjs] = maxextentind(AMatNew,BrhsNew,struct('objfunc',cFuncFree','Aeq',Aeq,'Beq',Beq,'Algorithm','simplex'));
                 if nDF < nD
                     [mResultsValObjs] = CompactToFull(mResultsValObjs,vFixed(nO+1:end),vFixedVals(nO+1:end)');
                 end
@@ -2843,7 +2838,9 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             else
                 warning('Need to define cFunc to calculate objective function values')
             end            
-
+            
+            sprintf('Current Allowable Axes Ranges based on Slider/Checkbox Settings')
+            {'Axis' 'Fixed'  'Min' 'Fixed Value' 'Max'}
             [num2cell([1:nO 1:nD]') num2cell(vFixed') num2cell(mResCompact(1,:)') num2cell(vFixedVals) num2cell(mResCompact(2,:)')]
             
             for i=1:n
@@ -3248,6 +3245,49 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         UpdateHighlightedTraces
     end
 
+    function SetAxesInFilterAltsBox(hind,event,txtSlides,lblSlides,nO,startHeightPx,hPerRow)
+       % Handler for when a new values is entered for the 1st Decision Axis to List on the
+       % Filter Alternatives menus. Shows the specified axis in first and
+       % all below until run to bottom of the pane.
+       
+       try
+          lTry = max([floor(str2num(get(hind,'string'))) 1]);
+       catch
+          msgbox('Error with input %s. Must be numeric',get(hind,'string'));
+          return
+       end
+       
+       nFull = length(txtSlides);
+       
+       if lTry>(nFull-nO)
+           lStart = nFull;
+       else
+           lStart = nO+lTry;
+       end
+       
+       for i=nO+1:nFull
+           sVis = 'on';
+           vPosVert = startHeightPx - hPerRow*(i-lStart);
+           if (i<lStart) || (vPosVert < 0)
+              sVis = 'off';
+           end
+           tUnits = get(txtSlides(i),'units');
+           set(txtSlides(i),'units','pixel');
+           vTxtPos = get(txtSlides(i),'Position');
+           vTxtPos(2) = vPosVert;
+           lUnits = get(lblSlides(i),'units');
+           set(lblSlides(i),'units','pixel');           
+           vLblPos = get(lblSlides(i),'Position');
+           vLblPos(2) = vPosVert;
+           
+           set(txtSlides(i),'Visible',sVis,'Position',vTxtPos);
+           set(lblSlides(i),'Visible',sVis,'Position',vLblPos);
+           
+           set(txtSlides(i),'units',tUnits);
+           set(lblSlides(i),'units',lUnits);
+       end       
+    end
+
     function UpdateLegendMenu(hind,event,i,Total)
         % Handler for when a legend menu option is selected.
         % Makes sure only the current menu option i is selected
@@ -3276,15 +3316,22 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             hPCTraces(i) = hPCGroup{i,1}(1);
         end
         checkedGroups = cell2mat(cmGroupData(:,2));
-        hLegend = legend(hPCTraces(checkedGroups==1),cmGroupData(checkedGroups==1,1),'FontSize',FontSize-4);
         
         % Set visibility
         visSet = 'show';
-        if (cShowInset==1) || strcmpi(cShowLegend,cLegendOptions{1}) || (strcmpi(cShowLegend,cLegendOptions{2}) && (cShowControls==1))
+        if (cShowInset==1) || strcmpi(cShowLegend,cLegendOptions{1}) || ...
+                (strcmpi(cShowLegend,cLegendOptions{2}) && (cShowControls==1)) || ...
+                (get(cbRampColor,'value') ==1)
+            %Hide if inset plot is visible OR Show Legend is set to hide OR
+            %    Show Legend is set to only when control panel hidden and
+            %    control panel is hidden OR Color Ramp box is checked
             visSet = 'hide';
+        else
+            hLegend = legend(hPCTraces(checkedGroups==1),cmGroupData(checkedGroups==1,1),'FontSize',FontSize-4);
         end
-        
-        legend(hLegend,visSet);
+        if hLegend > 0
+            legend(hLegend,visSet);
+        end
     end
             
     function ToggleSliders(hind,event)
@@ -3361,16 +3408,16 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         
         %Now work from the axis position
         aPosition = get(hAxis,'Position');
-        xLeftTab = aPosition(1)+(YAxisMargins(1)+nO-1+0.5-.0025)/(n-1+sum(YAxisMargins))*aPosition(3);
+        xLeftTab = aPosition(1)+(YAxisMargins(1)+(nO-1)+0.5-.0025)/(n-1+sum(YAxisMargins))*aPosition(3);
         xWidthTab = aPosition(3)*(nD)/(n-1+sum(YAxisMargins));
         vTabPosCur = get(hTabContainer,'Position');
         TabFontSizes = FontSize-4-12+1+[1:lNumFields];
         lTabHeight = sum(TabFontSizes/TabFontSizes(1));
-        yHeightTab = lTabHeight*0.0525; %0.07 if a row wraps in the table
-        
-        yBottomTab = max([aPosition(2)*(1-abs(mMaxExtent)) - yHeightTab - 0.02]);      %0.025     
+        yHeightTab = lTabHeight*0.06; %0.07 if a row wraps in the table
+      
+        yBottomTab = max([aPosition(2)-aPosition(4)*(-mMaxExtent) - yHeightTab] - 0.01);      %0.025     
         %position the table below the largest axis text label
-        vTablePosition = [xLeftTab yBottomTab xWidthTab yHeightTab];       
+        vTablePosition = [xLeftTab yBottomTab xWidthTab yHeightTab];
         set(hTabContainer,'Position',vTablePosition);
     end
 
@@ -3559,8 +3606,8 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
        
        lNumClasses = round(lNumClasses);
        
-       hPCPs = cell(lNumClasses);
-       cbColors = zeros(lNumClasses);
+       hPCPs = cell(lNumClasses,1);
+       cbColors = zeros(lNumClasses,1);
        hPCPs(:) = {0};
        
        
@@ -3602,6 +3649,41 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         
         set(ColorRampPCPs{i},'visible',sVis);       
     end
+
+    function ShowTab(hObj,event,i,hTabs,hTabButtons,vBackColor)
+       %selects and shows the ith member of hTabs and hTabButtons
+       %turns the color of the current button to white and the other buttons to
+       %the specified background color
+       %
+       % i = index of the tab selected to show
+       % hTabs = vector of handles to the tabs
+       % hTabButtons = vector of handles to the tab buttons
+       % vBackColor = vector specifying color to turn background of
+       % non-selected buttons
+
+       nTabs = max(size(hTabs));
+
+       for k=1:nTabs
+           if i==k
+               sVis = 'on';
+               sColor = 'white';
+           else
+               sVis = 'off';
+               sColor = vBackColor;
+           end
+
+           %k;
+           %sColor;
+
+           set(hTabs(k),'visible',sVis);
+           set(hTabButtons(k),'BackgroundColor',sColor);
+       end
+       if i==2 && (Enabled2Boolean(get(uimHideChecks,'checked'))==1)
+           %Additionally turn on the axis check boxes
+           ToggleCheckBoxVisibility(uimHideChecks,0,cbChecks,hTexts,hTabContainer);
+       end
+    end
+
 
     function RampColor(hind,event)
        % If the check box is checked, ramps the colors of traces in the specified direction based on
@@ -3713,8 +3795,10 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
            %Cycle through the classes, create one plot and checkbox per color/group
            lWidth = 250;
            for i=1:lNumClasses
-                ColorRampPCPs{i} = parallelcoords(mPlot(((vGroupNew==i) + (vRowToUse==1)==2),:),'color',mRamp(i,:));
-                
+                ColorRampPCPs{i} = parallelcoords(plot2,mPlot(((vGroupNew==i) + (vRowToUse==1)==2),:),'color',mRamp(i,:));
+                %Reset the parent because parallelcoords doesn't seem to do
+                %so
+                set(ColorRampPCPs{i}(:),'Parent',plot2);
                 vPosition = [10+(lWidth+5)*hOffset(i) lTopColor-65-(vOffset(i))*20 lWidth 20];
  
                 %As actual value
@@ -3734,6 +3818,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
                drawnow; pause(0.1); %let the gui catch up
                uistack(cell2mat(hPCGroup(lHighlightGroup,1)),'top');
            end
+           UpdateLegend;
        end       
     end
 
@@ -3912,6 +3997,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
 
     function ToggleInset(hInd,event)
         cVal = ToggleMenuItem(hInd);
+        UpdateLegend;
         if cVal==1
             %Show the Pareto Plot
             UpdateInset;
@@ -3920,7 +4006,6 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             set([hInsetPlot hBackBox],'Visible','off');
             set(get(hInsetPlot,'Children'),'Visible','off');
         end 
-        UpdateLegend;
     end
 
     function UpdateInset
@@ -4226,36 +4311,6 @@ function [DataVal]= ConvertPlot2DataUnits(PlotVal,ConversionFactors,blData2Plot)
     else
         DataVal = ConversionFactors(1)*PlotVal+ConversionFactors(2);
     end
-end
-
-function ShowTab(hObj,event,i,hTabs,hTabButtons,vBackColor)
-   %selects and shows the ith member of hTabs and hTabButtons
-   %turns the color of the current button to white and the other buttons to
-   %the specified background color
-   %
-   % i = index of the tab selected to show
-   % hTabs = vector of handles to the tabs
-   % hTabButtons = vector of handles to the tab buttons
-   % vBackColor = vector specifying color to turn background of
-   % non-selected buttons
-   
-   nTabs = max(size(hTabs));
-   
-   for k=1:nTabs
-       if i==k
-           sVis = 'on';
-           sColor = 'white';
-       else
-           sVis = 'off';
-           sColor = vBackColor;
-       end
-       
-       %k;
-       %sColor;
-       
-       set(hTabs(k),'visible',sVis);
-       set(hTabButtons(k),'BackgroundColor',sColor);
-   end
 end
 
 function [A,B] = SplitMatrix(C,nCol)

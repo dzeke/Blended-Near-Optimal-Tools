@@ -41,7 +41,7 @@ function [varargout] = ReorderCols(vNewOrder,varargin)
     
     %check the inputs all have the same number of columns
     for i=1:NumMatricies
-        if size(varargin{i},2) ~= n
+        if (size(varargin{i},2) ~= n) && (size(varargin{i},2) ~= 0)
             error('ReorderCols:ImproperInput','Input Matrix #%d is of different size than first. Reenter.',i)
         end
     end
@@ -54,7 +54,11 @@ function [varargout] = ReorderCols(vNewOrder,varargin)
     %Loop through each input matrix and return the selected columns
     for i=1:NumMatricies
         cMat = varargin{i};
-       varargout{i} =  cMat(:,vNewOrder);
+        if isempty(cMat)
+            varargout{i} = cMat;
+        else
+            varargout{i} =  cMat(:,vNewOrder);
+        end
     end 
 end
 

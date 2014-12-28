@@ -241,7 +241,7 @@ function [hTableComponent hTableContainer] = GenerateGroupLabelsTable(hFigure,mM
      %            '   th, td { border: 1pt solid black;\n   /*width: 28px;*/\n    text-align:center; }\n</STYLE></HEAD>']);
     strHeader= '';
     
-    strHTML = ['<HTML>',strHeader,'<BODY>', GTHTMLtableAdd(mMatrixTranspose,'colspan',mGroupCountTranspose,'bgcolor',mDataColor,'colwidth',vColWidth,'%','tabwidth','100%','border',1,'fontsize',mFontSize), '</BODY></HTML>'];
+    strHTML = ['<HTML>',strHeader,'<BODY>', GTHTMLtableAdd(mMatrixTranspose,'colspan',mGroupCountTranspose,'bgcolor',mDataColor,'colwidth',mGroupCountTranspose(1,:)*vColWidth,'%','tabwidth','100%','border',1,'fontsize',mFontSize), '</BODY></HTML>'];
     
     
     % Search the children of the figure for a java component. If it exists,

@@ -259,7 +259,7 @@ if ~isempty(COLWIDTH)
     end
     cCOLWIDTH = {};
     for i=1:szmat(2)
-        cCOLWIDTH{i} = sprintf('%.0f%s',COLWIDTH(i),COLWIDTHUNITS);
+        cCOLWIDTH{i} = sprintf('%.1f%s',COLWIDTH(i),COLWIDTHUNITS);
     end
     
     COLWIDTH=cCOLWIDTH;
@@ -267,7 +267,7 @@ if ~isempty(COLWIDTH)
     %COLWIDTH{90};
 end
 
-%build the vector of column widths
+%build the vector of font sizes
 if ~isempty(FONTSIZE)
     szFont = size(FONTSIZE);
     
