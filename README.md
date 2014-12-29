@@ -2,14 +2,14 @@ Blended Near-Optimal Tools
 ==============================
 This repository stores the Matlab 2013a source code for blended near-optimal tools that (a) generate alternatives, (b) visualize alternatives, and allow a user to interactively explore the near-optimal region from which alternatives are generated. The repository also contains the data and model files for a (c) linear programming example application to manage water quality for Echo Reservoir, Utah and (d) mixed-integer programming example application to manage water supply and demands in Amman, Jordan. The repository additionally provides (e) documentation on the above tools--including the paper submitted to Water Resources Research, scripts, and directions to generate each figure in the paper.
 
-Near-optimal alternatives perform within a (near-optimal) tolerable deviation of the optimal objective function value and are of interest to managers and decision makers because near-optimal alternatives can address un-modelled objectives, preferences, limits, uncertainties, or issues that are not considered by the original optimization model or it's optimal solution. Mathematically, the region of near-optimal alternatives is defined by the constraints of the original optimization model as well as a constraint that limits alternatives to those with objective function values that are within a tolerable deviation of the optimal objective function value. The code and tools within this repository allow users to generate and visualize the structure and full extent of the near-optimal region to an optimization problem. The tools also allow users to interactively explore region features of most interest, streamline the process to elicit un-modelled issues, and update the model formulation with new information. The tools and their use are described here for generating, visualizing, and interactively exploring near-optimal alternatives to optimization problems, but the tools are general and can be used to generate and visualize points within any high-dimensional, closed, bounded region that can be defined by a system of constraints. The parallel coordinate visualization and several interaction tools can also be used for any high-dimensional data set.
+Near-optimal alternatives perform within a (near-optimal) tolerable deviation of the optimal objective function value and are of interest to managers and decision makers because they can address un-modelled objectives, preferences, limits, uncertainties, or issues that are not considered by the original optimization model or it's optimal solution. Mathematically, the region of near-optimal alternatives is defined by the constraints for the original optimization model as well as a constraint that limits alternatives to those with objective function values that are within a tolerable deviation of the optimal objective function value. The code and tools within this repository allow users to generate and visualize the structure and full extent of the near-optimal region to an optimization problem. The tools also allow users to interactively explore region features of most interest, streamline the process to elicit un-modelled issues, and update the model formulation with new information. The tools and their use are described here for generating, visualizing, and interactively exploring near-optimal alternatives to optimization problems, but the tools are general and can be used to generate and visualize points within any high-dimensional, closed, bounded region that can be defined by a system of constraints. The parallel coordinate visualization and several interaction tools can also be used for any high-dimensional data set.   
 
 Below is listing of the repository contents by folder as well as additional information on citation, licensing, bug reports and authorship.
 
 ==============================
 1) DOCUMMENTATION (Paper and Scripts)
 
-Includes the paper submitted to Water Resources Research (under review) that describes this work as well as peer-reviewer comments and author responses. Also provides scripts and directions to generate each figure shown in the paper. These scripts make use of each of the tools described in sections 2) to 4). To generate each figure in the manuscript:
+Includes the paper re-submitted to Water Resources Research in December 2014 (under review) that describes this work as well as peer-reviewer comments and author responses to first and  second drafts submitted in August, 2013 and September 2014. Also provides scripts and directions to generate each figure shown in the paper. These scripts make use of each of the tools described in sections 2) to 4). To generate each figure in the manuscript:
 
     a. Download all the files in the folder 1-Documentation\ScriptsForPaper as well as the folders 2-GenerateAlternatives, 3-InteractiveParallelPlot, and 4-EchoReservoirApplication folders to a single folder on your local machine.
     b. In Matlab, add the target folder where you downloaded the files to your Matlab path
@@ -18,15 +18,15 @@ Includes the paper submitted to Water Resources Research (under review) that des
 
 	       >> FigGenForNearOptPaper
 
-    e. The script will generate Figures 1, 2, 3, and 6 in the submitted manuscript.
-    f. See the file Documentation-readme.txt for further instructions on how to interactively generate figures 4, 5, and 7 from Figure 3 and 6.
+    e. The script will generate Figures 1, 2, 3, and 5 in the submitted manuscript and prompt you whether to generate additional results discussed but not presented in the paper (select no).
+    f. See the file Documentation-readme.txt for further instructions on how to interactively generate figures 4, 5, 6, and 7 from Figure 3.
 
 Also provides directions and an example to load your own model data into the near-optimal tools.
 
 ==============================
 2) GENERATE ALTERNATIVES
 
-Uses stratified Monte-Carlo Markov Chain sampling to identify a large number of alternatives that comprehensively span the near-optimal region through both the decision and objective spaces. To get started:
+Uses stratified Monte-Carlo Markov Chain Gibbs sampling to identify a large number of alternatives that comprehensively span the near-optimal region through both the decision and objective spaces. To get started:
 
     a. Download all the files in the folder 2-GenerateAlternatives to a folder on your local machine.
     b. Add the target folder to your Matlab path.
@@ -59,7 +59,7 @@ To get started:
 ==============================
 4) ECHO RESERVOIR APPLICATION (Linear program to manage water quality)
 
-Illustrates use of the tools for a linear program to identify the cost-effective phosphorus removal practices to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah to a level specified in a pending Total Maximum Daily Load (TMDL) program for the reservoir. Includes all the data and model files and the script that moves data from the models to the near-optimal tools.
+Illustrates use of the tools for a linear program to identify the cost-effective phosphorus removal practices to reduce the phosphorus load to Echo Reservoir in the Weber basin, Utah to a level specified in a pending Total Maximum Daily Load (TMDL) program for the reservoir. Includes all the data and model files and the script that moves data from the models to the near-optimal tools as well as generate comparison results from one or more Modelling to Generate Alternatives (MGA) methods.
 
 To use:
 
@@ -68,9 +68,9 @@ To use:
     c. Set the Matlab directory to the same folder
     d. At the Matlab command prompt, enter:
 
-	       >> LoadEchoGamsResults('WQNE_outG6.gdx',3,2500,0)
+	       >> LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[2 0 50]);
 
-    e. Matlab will read optimal and modelling to generate alternatives (MGA) results from the file WQNE_outG6.gdx. Matlab will also generate 2,500 near-optimal alternatives (see Section 2 above) and plot the optimal, MGA, and near-optimal results in the Interactive Parallel Plotting tool (see Section 3 above).
+    e. Matlab will read optimal results from the file WQNE_outG6.gdx. Matlab will also generate 2,500 near-optimal alternatives (see Section 2 above) as well as approximately 13 comparison MGA alternatives by the serial method that uses a distance metric and plot everything using the Interactive Parallel Plotting tool (see Section 3 above).
     f. See additional directions in the file EchoReservoirApplication-readme.txt.
 
 ==============================    
@@ -110,5 +110,6 @@ AUTHOR and CONTACT
     Department of Civil & Environmental Engineering and Utah Water Research Lab
     Utah State University
     Email: david.rosenberg@usu.edu
+
 
 
