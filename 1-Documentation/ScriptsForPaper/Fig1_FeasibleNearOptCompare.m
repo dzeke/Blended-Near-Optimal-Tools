@@ -11,7 +11,7 @@ function [Fig1,Fig2] = Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tole
 % This is the script used to generate Figure 1 in the paper.
 % EXAMPLE USE:
 % [fig1, fig2] = Fig1_FeasibleNearOptCompare([1 -20 10 0 100], [3 2;0 1], ['<' '<'], [12 4]','min',1.8,14, ...
-         {'Decision Variable 1 (X_1)' 'Decision Variable 2' '(X_2)'},20,0,[1 0 15;2 0 1],0);
+%         {'Decision Variable 1 (X_1)' 'Decision Variable 2' '(X_2)'},20,0,[1 0 15;2 0 1],0);
 
 
 % INPUTS

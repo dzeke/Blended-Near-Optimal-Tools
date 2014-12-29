@@ -89,6 +89,9 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
 %      .maxtextents = n x 2 matrix of precalculated maximum extents for
 %           each dimension. If omitted, the function will calculate.
 %
+%      .addmaxextents = takes the value of 1 to add the calculated maximum extents to
+%           the alternatives returned (default value: 1 [add])
+%
 %      .Algorithm = the algorithm used to solve the underlying optimization
 %           problems
 %
@@ -160,6 +163,12 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     
     lStratDims =sum(fixeddims); %Number of dimensions along which to stratify sample
     
+    ExtentAlts = [];
+    AddMaxExtents = 1;
+    if (nargin == 4) && (isstruct(options)) && isfield(options,'addmaxextents')
+        AddMaxExtents = options.addmaxextents;
+    end
+    
     %Read the pre-calculated maximum extents
     PreCalcMaxExtents = [];
     if (nargin == 4) && (isstruct(options)) && isfield(options,'maxextents')
@@ -168,8 +177,9 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
             warning('Precalculated maxextents are impropperly sized. Defaulting to none')
             PreCalcMaxExtents = [];
         end
+        AddMaxExtents = 0;
     end
-    
+        
     %Read in the error for determining whether solutions are valid
     if (nargin == 4) && (isstruct(options)) && isfield(options,'errorresid')
         errorresid = options.errorresid;
@@ -269,6 +279,9 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
             if isempty(PreCalcMaxExtents)
                 PreCalcMaxExtentsFull = [mComboExts; vExts];
                 PreCalcMaxExtents = vExts;
+                if AddMaxExtents
+                    ExtentAlts = mComboFull;
+                end
             else
                 PreCalcMaxExtentsFull = [mComboExts;PreCalcMaxExtents];
             end
@@ -418,6 +431,9 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     %Step 1. Find independent maximum extents
     if isempty(PreCalcMaxExtents) 
         [mExtFull, vExts] = maxextentind(A,b,options);
+        if AddMaxExtents
+            ExtentAlts = [ExtentAlts;mExtFull];
+        end
     else
         vExts = PreCalcMaxExtents;
     end
@@ -685,7 +701,11 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
         % Combine current results with prior linear combo results
         X = [Xret;X];
         vValid = [vValidret;vValid];
-   end   
+   end 
+   if AddMaxExtents
+        X = [ExtentAlts;X];
+        vValid = [ones(size(ExtentAlts,1),1);vValid];
+   end
 
    execTime = toc(tStart);
    

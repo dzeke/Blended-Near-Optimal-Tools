@@ -300,7 +300,7 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi
 %    7. Re-title the figure. Run the command at the command promp:
 %         >>  set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 7. Expanded near-optimal region');      
 
-bReply = inputdlg(['Finished auto-generating Figures 1, 2, 3, and 5. To interactively create Figures 4, 6, and 7 from Figures 3 and 5, ' ...
+bReply = questdlg(['Finished auto-generating Figures 1, 2, 3, and 5. To interactively create Figures 4, 6, and 7 from Figures 3 and 5, ' ...
        ' see the further steps for each figure listed as comments in the script. Continue to generate results not shown?'],'Continue...?','Yes','No','No');
 
 if strcmpi(bReply,'Yes')
@@ -345,22 +345,34 @@ if strcmpi(bReply,'Yes')
     %    To look more closely at the values for non-zero decision variables:
     %      a. On the plot, select the menu Plot Data=>Save Data (Cntrl-D) to
     %              save the data to the base workspace.
-    %      b. For the HSJ results from the current model, to see the number of decision variables below 100 kg phosphorus,
-    %         enter the command:
-    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < 100)
-    %      c. To see the number of decision variables below the extents
-    %         identified by stratified sampling, enter the commend:
+    %      b. To see the number of decision variables below the extents of
+    %           stratified sampled near-optimal alternatives, enter the commend:
     %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
-    %      d. To see which variables are below 100 kg, enter the commands:
+    %      c. To see which variables are below the extents identified by stratified sampling, enter the commands:
     %           >> actFull = [ no_vargs{24} no_vargs{48}' ]
-    %           >> actFull(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < 100,:)
-    %      e. To see similar results for GAMS model with land area and stream
+    %           >actFull(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+    %      d. To see similar results for GAMS model with land area and stream
     %         bank lenght decision variables, sbustitute 'MGA-GAMS-HSJ' for
     %         'MGA-HSJ', e.g.
-    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-GAMS-HSJ'),:))' < 100)     
+    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-GAMS-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')     
 
     % C) Five MGA-Simultaneous trials each generated ten alternatives in 100 to 500 s that implemented 
     %    up to six phosphorus removal practices in each sub-watershed.
           [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[3 0 10; 3 0 10; 3 0 10; 3 0 10; 3 0 10]);
           set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 4: MGA-Simultaneous results across 5 trials');  
+          
+    % D) Overlay all the MGA-HSJ, Serial, and Simultaneous results ontop of
+    %    each other
+          [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[1 0 50; 2 0 50; 3 0 10; 4 0 0]);
+          set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 5: All MGA results');          
+    %    To look more closely at the values for non-zero decision variables:
+    %      a. On the plot, select the menu Plot Data=>Save Data (Cntrl-D) to
+    %              save the data to the base workspace.
+    %      b. To see the number of decision variables below the extents of
+    %           stratified sampled near-optimal alternatives, enter the commend:
+    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+
+
+    
+    % 
 end
