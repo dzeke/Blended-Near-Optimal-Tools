@@ -43,10 +43,10 @@
 %    maximize     Z = cX
 %    such that    Ax <= b
 %  Where
-%   c = objective function coeffiecients
-%   A = contraint coeffients that define the simplex
-%   b = right-hand side coefficients of constraints that define the simplex
-%   n = number of dimensions (length of c and b and rank of A)
+%   c = 1 x n row vector of objective function coeffiecients
+%   A = m x n matrix of contraint coeffients that define the simplex
+%   b = m x 1 column vector of right-hand side coefficients of constraints that define the simplex
+%   n = number of decision variables (length of c and b and rank of A)
 %   r = length of a simplex side
 %   p = number of alternatives to sample
 %
@@ -57,25 +57,31 @@
 %  C. Plot them up and allow the user to interact
 
 % Step A. Defining the model and model data
-n = 5;
-c = [5 3 1 0.5 0.5];
+n = 5;                  %Number of decision variables
+c = [5 3 1 0.5 0.5];    %
 r = 6;
 A = [-eye(n); ones(1,n)]; %first n rows represent the greater than or equal to inequalities ; (negative sign reverses the direction of default less than)
                           %last row is X1 + X2 + ... + Xn <= r
-b = [zeros(n,1); r];
-p = 150;
+b = [zeros(n,1); r];    % right hand side of constraints
+p = 150;       % Number of alternatives to generate
 
 mVert = [zeros(1,n); r*eye(n)]; %vertices (corner points) of the simplex. Used for comparison on the plot.
 
 % Step B. Solve for the optimal solution and sample alternatives
 [Xopt,fopt] = linprog(-c,A,b); % negative sign on c indicates maximization
 
+%Generate the Near-optimal tolerance constraint (cX >= f* ToleranceValue)
+%for an maximization problem
+ToleranceVal = 0;
+A_nearopt = [A;-c];
+b_nearopt = [b;fopt*ToleranceVal];
+
 % Random sample alternatives from within the feasible region using the
 % stratified gibbs tool. Notes:
 %    - This sampling approach works for any closed,bounded region, not just near-optimal!
 %    - Will also stratify along specified linear combinations of decision variables --  in this case the objective function c
 %    - Use the optimal solution Xopt as a starting point
-[Xs,vVal] = stratgibbs(p,A,b,struct('lincombo',c','x0',Xopt','extmethod','opt','errorresid',0));
+[Xs,vVal] = stratgibbs(p,A_nearopt,b_nearopt,struct('lincombo',c','x0',Xopt','extmethod','opt','errorresid',0));
 
 % Only use valid alternatives (vVal>0)
 XsValid = Xs(vVal>0,:);
@@ -103,8 +109,8 @@ vObjsVert = mVert*c';
 
 vGroups = ['Optimum'; repmat({'Feasible region'},length(vObjs),1); repmat({'Vertices'},length(vObjsVert),1)];
 mGroupData = ['Feasible region' {1} {1}; 'Vertices' {1} {1.5}; 'Optimum' {1} {2.5}];
-nearoptplotmo2([-fopt;vObjs;vObjsVert],[Xopt';XsValid;mVert],'Tolerance',0.85,'AMat',[A;-c],'Brhs',[b;fopt],'cFunc',c,...
-      'OptSolRow',1,'NearOptConstraint',7, ...
+nearoptplotmo2([-fopt;vObjs;vObjsVert],[Xopt';XsValid;mVert],'Tolerance',ToleranceVal,'AMat',A_nearopt,'Brhs',b_nearopt,'cFunc',c,...
+      'OptSolRow',1,'NearOptConstraint',size(A_nearopt,1),'ShowControls',0,'FontSize',20,'YAxisMargins',[0.25 0.25],...
       'ShowObjsDiffColor',0,'vGroup',vGroups,'mGroupData',mGroupData,'GroupToHighlight','Optimum');
 
 % Suggested interactions to emphasize some key aspects of the example:
