@@ -364,6 +364,18 @@ function [xMGA, p, MinDist, mTrialInfo, StopCode, StopExplain, runTime] = doMGA(
     StopCode = 0;   
     runTime = 0;
     
+    
+     %Build the optimization model formulation from the parameters
+      ModelForm.Aineq = A;
+      ModelForm.bineq = b;
+      ModelForm.Aeq = Aeq;
+      ModelForm.beq = beq;
+      ModelForm.lb = lB;
+      ModelForm.ub = uB;
+      ModelForm.solver = 'linprog';
+      ModelForm.options = struct('Algorithm','simplex');
+    
+    
     %% Start MGA iterations
     
     runTime = 0;
@@ -475,7 +487,8 @@ function [xMGA, p, MinDist, mTrialInfo, StopCode, StopExplain, runTime] = doMGA(
       end
       
       if blAsLP  
-          [xExtsFull,xExtsCompact] = maxextentind(A,b,optionsForExtent);
+          %[xExtsFull,xExtsCompact] = maxextentind(A,b,optionsForExtent);
+          [xExtsFull,xExtsCompact] = maxextentind(ModelForm,optionsForExtent);
           UpperBoundDist = sum(xExtsCompact(:,2)-xExtsCompact(:,1));
       else
           [xExtsFull,xExtsCompact] = maxextentindnl(A,b,optionsForExtent);
@@ -622,7 +635,8 @@ function [xMGA, p, MinDist, mTrialInfo, StopCode, StopExplain, runTime] = doMGA(
       optionsForExtent.Algorithm = 'simplex';
       
       if blAsLP  
-          [xExtsFull,xExtsCompact] = maxextentind(A,b,optionsForExtent);
+          %[xExtsFull,xExtsCompact] = maxextentind(A,b,optionsForExtent);
+          [xExtsFull,xExtsCompact] = maxextentind(ModelForm,optionsForExtent);
           UpperBoundDist = sum(xExtsCompact(:,2)-xExtsCompact(:,1));
       else
           [xExtsFull,xExtsCompact] = maxextentindnl(A,b,optionsForExtent);

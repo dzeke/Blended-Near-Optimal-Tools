@@ -76,12 +76,16 @@ ToleranceVal = 0;
 A_nearopt = [A;-c];
 b_nearopt = [b;fopt*ToleranceVal];
 
+%Put the model into ProblemStruct
+ProbStruct.Aineq = A_nearopt;
+ProbStruct.bineq = b_nearopt;
+
 % Random sample alternatives from within the feasible region using the
 % stratified gibbs tool. Notes:
 %    - This sampling approach works for any closed,bounded region, not just near-optimal!
 %    - Will also stratify along specified linear combinations of decision variables --  in this case the objective function c
 %    - Use the optimal solution Xopt as a starting point
-[Xs,vVal] = stratgibbs(p,A_nearopt,b_nearopt,struct('lincombo',c','x0',Xopt','extmethod','opt','errorresid',0));
+[Xs,vVal] = stratgibbs(p,ProbStruct,struct('lincombo',c','x0',Xopt','extmethod','opt','errorresid',0));
 
 % Only use valid alternatives (vVal>0)
 XsValid = Xs(vVal>0,:);
@@ -109,7 +113,7 @@ vObjsVert = mVert*c';
 
 vGroups = ['Optimum'; repmat({'Feasible region'},length(vObjs),1); repmat({'Vertices'},length(vObjsVert),1)];
 mGroupData = ['Feasible region' {1} {1}; 'Vertices' {1} {1.5}; 'Optimum' {1} {2.5}];
-nearoptplotmo2([-fopt;vObjs;vObjsVert],[Xopt';XsValid;mVert],'Tolerance',ToleranceVal,'AMat',A_nearopt,'Brhs',b_nearopt,'cFunc',c,...
+nearoptplotmo2([-fopt;vObjs;vObjsVert],[Xopt';XsValid;mVert],'Tolerance',ToleranceVal,'ProbForm',ProbStruct,'cFunc',c,...
       'OptSolRow',1,'NearOptConstraint',size(A_nearopt,1),'ShowControls',0,'FontSize',20,'YAxisMargins',[0.25 0.25],...
       'ShowObjsDiffColor',0,'vGroup',vGroups,'mGroupData',mGroupData,'GroupToHighlight','Optimum');
 

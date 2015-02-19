@@ -1,6 +1,6 @@
 Documentation-readme.txt
 
-The Documentation folder contains the script files and directions to generate each figure in the version of the paper re-submitted in December 2014. Additionally, the folder has PDF versions of the re-submitted and original manuscripts, reviewer comments, and response letter to reviewer comments.
+The Documentation folder contains the script files and directions to generate each figure in the version of the paper re-submitted in February 2015. Additionally, the folder has PDF versions of the re-submitted and original manuscripts, reviewer comments, and response letter to reviewer comments.
 
 Rosenberg-NearOptimalWaterResourcesDecisionMaking-Dec2014.pdf : revised version of the manuscript re-submitted to Water Resources Research in Dec 2014 that addresses 2nd round of reviewer comments.
 
@@ -14,6 +14,8 @@ Rosenberg-ResponseLetter-NearOptimal3-Dec2014.pdf : Letter listing reviewer comm
 
 LoadYourOwnModel.m : Directions and example for how to load your own model data into the near-optimal tools. Specific directions for linear programs, more general directions for mixed-integer and non-linear programs.
 
+Rosenberg-Workshop-NearOptimalManagement-Jan16.pdf : step-by-step instructions for a near-optimal water management workshop given at Tarbiat Modares University in Tehran, Iran in January 2015.
+
 
 Within the ScriptsForPaper folder:
 
@@ -26,6 +28,8 @@ The file also has additional directions to interactively generate Figures 4, 5, 
 The file also contains the commands and directions to generate all the results that are discussed in the manuscript but not presented.
 
 - Fig1_FeasibleNearOptCompare.m : Matlab script to generate Figures 1 and 2 in the revised paper. See Fig_GenForNearOptPaper.m for the parameter settings used for the paper figure.
+
+- doMGA.m : a Matlab file that includes the logic for generating alternatives by various MGA methods. Used to generate Figures 1, 3, 4, 5, and 6.
 
 - Delcols.m, extrdir.m, extrpts.m, polygeom.m : other Matlab files used by the above scripts.
 

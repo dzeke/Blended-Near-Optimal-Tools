@@ -1,4 +1,4 @@
-function [X,vValid,execTime] = stratgibbs(p,A,b,options)
+function [X,vValid,execTime] = stratgibbs(p,problemstruct,options)
 % Stratify random sample p points from within the decision space which is the convex polytope
 % defined by a matrix of contraint equations Ax <= b. Stratifies to include samples
 % in the polytope corners which are not ordinarily visited when uniformly
@@ -53,11 +53,23 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
 %         specify the number of points among the deicsion variables and
 %         linear combinations. For example, set to [0 pTs] to only sample
 %         pTs points from the linear combinations.
-%   A = an m-by-n matrix of constraint equation
-%        coefficients that includes both inequality, lower, and upper bound
-%        constraints.
-%   b = a m-by-1 vector of constants representing the right-hand-side of
-%   the constraint equations
+%   problemstruct = matlab problem structure with fields for the
+%   inequality, equality, lower-bound, and upper-bound constraints of the
+%   problem
+%      .Aineq = m x n matrix of inequality constraint coefficients
+%          .Aineq x X <= .bineq
+%      .bineq = m x 1 vector of right-hand side coefficients for the
+%           inequality constraints (see above for .Aineq)
+%      .Aeq = q x n matrix of equality constraint coeffients for the 
+%           .Aeq x X = .beq
+%      .beq = q x 1 vector of right hand sides of the equality constraint
+%           conefficients
+%      .lb = n x 1 vector of lower bounds for decision variabiles
+%           X >= lb
+%      .ub = n x 1 vector of upper bounds for decision variables
+%           X <= ub
+%
+%    Also the solver .options
 %
 %   options
 %      .matformat = {reduce [default], orig}
@@ -92,16 +104,23 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
 %      .addmaxextents = takes the value of 1 to add the calculated maximum extents to
 %           the alternatives returned (default value: 1 [add])
 %
-%      .Algorithm = the algorithm used to solve the underlying optimization
-%           problems
+%      .ChainLength = the length of the Monte-Carlo Markov chain. The number of samples to draw per chain 
+%           once a stratified sample is drawn and established for an objective or
+%           decision variable axes. The chain represents sampling within
+%           (on the interior of) the polytope. Increase to speed up
+%           the overall run time as Monte Carlo Markov chain sampling is fast. (Default value: 1);
 %
-%      .GibbsDrawsPerSample = the number of Gibbs samples to draw (interior) per
-%           stratified sample drawn on a decision axis. Increase to significantly speed up
-%           the overall run time as the Gibbs sampler is fast. (Default value: 1);
-%
-%      .other fields == passed along as is to the gibbs sampler
+%      .MCMCMethod = Monte Carlo Markov Chain Method to use to sample. Will
+%           call the appropriate function. Options are:
+%               cprnd-gibbs {default} - a gibbs sampler written by Tim J. Benham in cprnd.m
+%               cprnd-hitandrun - a hit and run sampler written by Tim J. Benham in cprnd.m
+%               maxextentgibbs - a mimic of gibbs sampling that cycles through variables to find maximum extents at each step written by David E.
+%                           Rosenberg in maxextentgibbs.m
+% 
+%      .other fields == passed along as is to the MCMC sampler
 %          
 % CALLED FUNCTIONS
+%   - cprnd.m
 %   - maxextentgibbs.m
 %   - maxextentind.m
 %   - linprog.m
@@ -114,6 +133,9 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
 %   david.rosenberg@usu.edu
 %
 %   History
+%   - Febraury 2015 - Updated to specify the problem formulation as in input parameter using the matlab problem
+%       structure to include inequality, inequality, lower-bound, and
+%       upper-bound constraints     
 %   - December 2014 - Updated to allow specifying the number of Gibbs
 %       samples to draw per stratify sample (GibbsDrawsPerSample)
 %   - July 2014. Updated to reject samples that are unfeasible according to the errorresid
@@ -137,9 +159,18 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
 %
 %% #######################
 
+%   Cross from full model specification to related value
+    %Check validity of full specification
+    [a_full,b_full] = OptimiFull(problemstruct);
+    
+    if isempty(a_full)
+        warning('Problem with problemstruct')
+        return
+    end
+    
     tStart = tic;
-    n = size(A,2);                         % dimension
-    m = size(A,1);                         % num constraint ineqs
+    n = size(a_full,2);                         % dimension
+    m = size(a_full,1);                         % num constraint ineqs
     
     % Check input arguments
     
@@ -151,7 +182,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     
 
     %determine fixed dimensions along which to stratify sample
-    if (nargin == 4) && (isstruct(options)) && isfield(options,'fixeddims')
+    if (nargin == 3) && (isstruct(options)) && isfield(options,'fixeddims')
         fixeddims = options.fixeddims;
         if size(fixeddims,2) ~= n
             warning('fixeddims is impropperly sized. Defaulting to stratify sample along all dimensions')
@@ -171,7 +202,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     
     %Read the pre-calculated maximum extents
     PreCalcMaxExtents = [];
-    if (nargin == 4) && (isstruct(options)) && isfield(options,'maxextents')
+    if (nargin == 3) && (isstruct(options)) && isfield(options,'maxextents')
         PreCalcMaxExtents = options.maxextents;
         if size(PreCalcMaxExtents) ~= [n 2]
             warning('Precalculated maxextents are impropperly sized. Defaulting to none')
@@ -181,38 +212,54 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     end
         
     %Read in the error for determining whether solutions are valid
-    if (nargin == 4) && (isstruct(options)) && isfield(options,'errorresid')
+    if (nargin == 3) && (isstruct(options)) && isfield(options,'errorresid')
         errorresid = options.errorresid;
     else
         errorresid = 0;
     end
     
     %Options structures with solve info for various routines
-    optLPs = struct('maxiter',1000,'Display', 'off');
-    optMEGibbs = struct('extmethod','linalg'); %opt?
-    
-    %Read in the optional Algorithm to use
-    if (nargin==4) && (isstruct(options)) && isfield(options,'Algorithm')
-        Algorithm = options.Algorithm;
-        optMEGibbs.Algorithm = Algorithm;
-        optLPs.Algorithm = Algorithm;
-        optionsFull.Algorithm = Algorithm;
+    if ~isfield(problemstruct,'options') || isempty(problemstruct.options)
+        optLPs = struct('maxiter',1000,'Display', 'off','Algorithm','interior-point');
+        problemstruct.options = optLPs;
+    else
+        optLPs = problemstruct.options;
     end
     
-    GibbsDrawsPerSample = 1;
-    %Read in the GibbsDrawsPerSample
-    if (nargin==4) && (isstruct(options)) && isfield(options,'GibbsDrawsPerSample')
-        GibbsDrawsTemp = floor(options.GibbsDrawsPerSample);
-        if GibbsDrawsTemp < 1
+    optMEGibbs = struct('extmethod','linalg'); %opt?
+    
+    %Pass along the Algorithm to use
+        Algorithm = optLPs.Algorithm;
+        optMEGibbs.Algorithm = Algorithm;
+        optLPs.Algorithm = Algorithm;
+    
+    %MONTE CARLO MARKOV CHAIN SAMPLER OPTIONS
+    sMCMCMethods = {'cprnd-gibbs' 'cprnd-hitandrun' 'maxextentgibbs'}; 
+    MCMCMethod = sMCMCMethods{1};
+    
+    %Read in the Monte Carlo Markov chain method
+    if (nargin==3) && (isstruct(options)) && isfield(options,'MCMCMethod')
+        if ismember(options.MCMCMethod,sMCMCMethods)
+            MCMCMethod = options.MCMCMethod;
+        else 
+            warning(['stratgibbs: ', options.MCMCMethod, ' not recognized. Defaulting to ',MCMCMethod])
+        end
+    end
+    
+    ChainLength = 1;
+    %Read in the Monte Carlo Markov Chain Length
+    if (nargin==3) && (isstruct(options)) && isfield(options,'ChainLength')
+        ChainLengthTemp = floor(options.ChainLength);
+        if ChainLengthTemp < 1
             warning('GibbsDrawsPerSample must be >= 1. Proceeding with default value of 1')
         else
-            GibbsDrawsPerSample = GibbsDrawsTemp;
+            ChainLength = ChainLengthTemp;
         end
     end    
     
     %determine the maxdrawpersample -- maximum number of calls to the gibbs
     %sampler per stratification sample when gibbs gives a bad sample
-    if (nargin == 4) && (isstruct(options)) && isfield(options,'maxsdrawpersample')
+    if (nargin == 3) && (isstruct(options)) && isfield(options,'maxsdrawpersample')
         maxdrawpersample = options.maxdrawpersample;
     else
         maxdrawpersample = 5;
@@ -222,7 +269,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     blAddCombos = 0;
     
     %determine whether there are addtional linear combos to consider
-    if (nargin == 4) && (isstruct(options)) && isfield(options,'lincombo')
+    if (nargin == 3) && (isstruct(options)) && isfield(options,'lincombo')
         lincombo = options.lincombo;
         %check the size
         [nl lLinCombos] = size(lincombo);
@@ -245,7 +292,8 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
             %the lower and upper bounds of the linear combinations
             optionsFull.objfunc = lincombo;
             
-            [mComboFull, mComboExts] = maxextentind(A,b,optionsFull);
+            %[mComboFull, mComboExts] = maxextentind(A,b,optionsFull);
+            [mComboFull, mComboExts] = maxextentind(problemstruct,optionsFull);
             
             lDoObjs = 1;
             
@@ -258,7 +306,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
             optionsFull = rmfield(options,'lincombo');
          
             %Calculate extents again for regular decision variables
-            [mExtFull, vExts] = maxextentind(A,b,optionsFull);
+            [mExtFull, vExts] = maxextentind(problemstruct,optionsFull);
             
             if (any(any(isnan(vExts))))
                 lDoObjs = 0;
@@ -286,11 +334,6 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
                 PreCalcMaxExtentsFull = [mComboExts;PreCalcMaxExtents];
             end
             
-            %optionsFull.maxextents = PreCalcMaxExtentsFull;
-            
-            Afull = [A; lincombo';-lincombo'];
-            Bfull = [b; mComboExts(:,2);-mComboExts(:,1)];
-            
             pMainPerLin = pLin; % floor(pLin/GibbsDrawsPerSample); ignore for objective functions
                                     
             %Call the stratify gibbs routine again with this new matrix.
@@ -302,7 +345,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
                 for l=1:lLinCombos
                     
                     bRand = mComboExts(l,1) + (mComboExts(l,2)-mComboExts(l,1))*rand(pMainPerLin,1); %Random sample within maximum extents
-                    CurrGibbsDraws = 1;  % GibbsDrawsPerSample;
+                    CurrChainLength = 1;  % GibbsDrawsPerSample;
                     for j=1:pMainPerLin %points to randomlly sample along the stratification (a linear combination of decision variables)
                        Aeq = lincombo(:,l)';
                        Beq = bRand(j);
@@ -320,12 +363,20 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
                        end
 
                        for k=kInds
+                          ProbStructCurr = problemstruct;
+                          if isfield(ProbStructCurr,'Aeq')
+                              ProbStructCurr.Aeq = [ProbStructCurr.Aeq;Aeq];
+                              ProbStructCurr.beq = [ProbStructCurr.beq;Beq];
+                          else
+                              ProbStructCurr.Aeq = Aeq;
+                              ProbStructCurr.beq = Beq;       
+                          end
                           %Calculate the maximum extents along this dimension
-                          optionsExt.Aeq = Aeq;
-                          optionsExt.Beq = Beq;
+                          %optionsExt.Aeq = Aeq;
+                          %optionsExt.Beq = Beq;
                           optionsExt.objfunc = lincombo(:,k);
 
-                          [xFull xCmp] = maxextentind(A,b,optionsExt);
+                          [xFull xCmp] = maxextentind(ProbStructCurr,optionsExt);
 
                           %Random sample within the extents
                           bNew = xCmp(1,1)+(xCmp(1,2)-xCmp(1,1))*rand(1,1);
@@ -336,21 +387,72 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
                        %draw a Gibbs sample from the specified linear
                        %combination values
                        if j==pMainPerLin
-                           CurrGibbsDraws = pLin - (j-1)*GibbsDrawsPerSample;
+                           CurrChainLength = pLin - (j-1)*ChainLength;
                        end
                        
-                       lDrawsNeed = CurrGibbsDraws;
+                       lDrawsNeed = CurrChainLength;
                        k=1;
                        xGood = [];
                        
+                       %Update the model formulation to include the new
+                       %equity constrait representing the new sampled value
+                       %for the l-th linear combo (objective)
+                       problemstructCurr = problemstruct;
+                       if isfield(problemstructCurr,'Aeq') && isfield(problemstructCurr,'beq')
+                           problemstructCurr.Aeq = [problemstructCurr.Aeq;Aeq];
+                           problemstructCurr.beq = [problemstructCurr.beq;Beq];
+                       else
+                           problemstructCurr.Aeq = Aeq;
+                           problemstructCurr.beq = Beq;
+                       end
+                       %Use Chebychev to draw an initial starting point
+                       %(inside the inequality constraints, on the equality
+                       %constriants)                      
+                       x0 = chebycenterFull(problemstructCurr);
+                       optMEGibbs.x0 = x0;
+                       
+                       if isempty(x0)
+                           %Try a different formulation to generate an initial
+                           %solution
+                           problemstructCurr.f = circshift(eye(n,1),0)';
+                           problemstructCurr.solver = 'linprog';
+                           problemstructCurr.options = optLPs;
+
+                           [x0, f_ret, f_flag] = linprog(problemstructCurr);
+                           if f_flag ~= 1
+                               problemstructAlt = problemstructCurr;
+                               v_lb = vExts(:,1);
+                               v_ub = vExts(:,2);
+                               problemstructAlt.lb = v_lb;
+                               problemstructAlt.ub = v_ub;
+                               [xO,f_ret,f_flag] = linprog(problemstructAlt);
+
+                               if f_flag ~= 1
+                                   x0 = [];
+                                   optMEGibbs.x0 = [];
+                               end
+                           end
+                       end                     
+                       
+                       [a_f,b_f] = OptimiFull(problemstructCurr);
+                       
                        while (lDrawsNeed>0) && (k<=maxdrawpersample)
-                           %Loop to try to get good Gibbs samples
-                            Xcurr = maxextentgibbs(lDrawsNeed,[A; Aeq; -Aeq],[b;Beq;-Beq],optMEGibbs);
+                           %Loop to try to get good MCMC samples
+ 
+                           %Select the Monte Carlo Markov Chain sampler
+                           if strcmpi(MCMCMethod,sMCMCMethods{1})
+                                Xcurr = cprnd(lDrawsNeed,a_f,b_f,struct('method','gibbs','isotropic',0,'x0',x0));                         
+                           elseif strcmpi(MCMCMethod,sMCMCMethods{2})
+                               Xcurr = cprnd(lDrawsNeed,a_f,b_f,struct('method','hitandrun','isotropic',0,'x0',x0));
+                           elseif strcmpi(MCMCMethod,sMCMCMethods{3})
+                               Xcurr = maxextentgibbs(lDrawsNeed,a_f,b_f,optMEGibbs);      
+                           end
+                            
                             try
                             %Not-a-number
                             vValidTemp = -1*any(isnan(Xcurr),2);
                             %Constraint feasibility
-                            vResid = repmat(b,1,sum(vValidTemp==0)) - A * Xcurr';
+                            vResid = repmat(b_f,1,sum(vValidTemp==0)) - a_f * Xcurr';
                             vConstViolates = sum(vResid<errorresid,1)>0;
                             vValidTemp(vValidTemp==0) = -2*(vConstViolates'==1);
                             vValidTemp(vValidTemp==0) = 1;
@@ -358,28 +460,33 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
                                sprintf('test'); 
                             end
                             xGood = [xGood;Xcurr(vValidTemp==1,:)];
-                            lDrawsNeed = CurrGibbsDraws-size(xGood,1);
+                            lDrawsNeed = CurrChainLength-size(xGood,1);
                             k=k+1;
                        end
                        
                        Xret = [Xret;Xcurr]; %store the results
                     end
                 end
+                
+                if ~isempty(Xret)
+                    lObjSols = size(Xret,1);
+                    vValidret = ones(lObjSols,1);
+                    %Test feasibility of Gibbs solutions
+                    %for NaNs
+                    vValidret(any(isnan(Xret),2)) = -1;
+                    %Constraint feasibility
+                    vResid = repmat(b_f,1,lObjSols) - a_f * Xret';
+                    vConstViolates = sum(vResid<errorresid,1)<0;
+                    vValidret(vConstViolates'==1) = -2;
 
-                lObjSols = size(Xret,1);
-                vValidret = ones(lObjSols,1);
-                %Test feasibility of Gibbs solutions
-                %for NaNs
-                vValidret(any(isnan(Xret),2)) = -1;
-                %Constraint feasibility
-                vResid = repmat(b,1,lObjSols) - A * Xret';
-                vConstViolates = sum(vResid<errorresid,1)>0;
-                vValidret(vConstViolates'==1) = -2;
-
-                %report feasibility statistics on these generated alternatives
-                vFeas = histc(vValidret,[-2:1]);
-                sprintf('Feasibility of alternatives generated from linear combinations:')
-                [{'Total' 'Feasible' 'No info' 'NaNs' 'Do not satisfy constraints'}' num2cell([pLin*lLinCombos;flipud(vFeas)])]
+                    %report feasibility statistics on these generated alternatives
+                    vFeas = histc(vValidret,[-2:1]);
+                    if size(vFeas,2) > 1
+                        vFeas = vFeas';
+                    end
+                    sprintf('Feasibility of alternatives generated from linear combinations:')
+                    [{'Total' 'Feasible' 'No info' 'NaNs' 'Do not satisfy constraints'}' num2cell([pLin*lLinCombos;flipud(vFeas)])]
+                end
             end
             
             %Determine where to go next
@@ -404,7 +511,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     mLinCombos = [];
     
     %determine the matformat to use
-    if (nargin == 4) && (isstruct(options)) && isfield(options,'matformat') && strcmp(lower(options.matformat),'orig')
+    if (nargin == 3) && (isstruct(options)) && isfield(options,'matformat') && strcmp(lower(options.matformat),'orig')
         matformat = 'orig';
         gsize = n;
     else
@@ -430,7 +537,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     
     %Step 1. Find independent maximum extents
     if isempty(PreCalcMaxExtents) 
-        [mExtFull, vExts] = maxextentind(A,b,options);
+        [mExtFull, vExts] = maxextentind(problemstruct,options);
         if AddMaxExtents
             ExtentAlts = [ExtentAlts;mExtFull];
         end
@@ -447,7 +554,7 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
     
     %calc the samples per decision variable stratify
     p_dec = pToUse(1);
-    pMainPerDec = floor(p_dec/GibbsDrawsPerSample);
+    pMainPerDec = floor(p_dec/ChainLength);
     
     %set up the output matrix
     X = zeros((lStratDims*p_dec),n);
@@ -466,221 +573,135 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
         %Step 2. Uniformly randomly sample 1/n-th of the points from along the
 %       maximum extent of the current decision variable 
         xRndList = vExts(i,1) + (vExts(i,2)-vExts(i,1))*rand(pMainPerDec,1);
-        if GibbsDrawsPerSample==1
+        if ChainLength==1
             X((lStrat-1)*p_dec+1:lStrat*p_dec,i) = xRndList;
         else
-           X((lStrat-1)*p_dec+1:(lStrat-1)*p_dec+pMainPerDec*GibbsDrawsPerSample,i) = ...
-                reshape(repmat(xRndList',GibbsDrawsPerSample,1),pMainPerDec*GibbsDrawsPerSample,1);
-           %Fill the last ones
-            X((lStrat-1)*p_dec+pMainPerDec*GibbsDrawsPerSample+1:lStrat*p_dec,i) = xRndList(end);      
+           %Dsitribute the sampled points into the i-th column so that for
+           %GibbsDrawsPerSample>1 the values repeat on rows
+           X((lStrat-1)*pMainPerDec*ChainLength+1:(lStrat)*pMainPerDec*ChainLength,i) = ... 
+               reshape(repmat(xRndList',ChainLength,1),pMainPerDec*ChainLength,1);
         end
         %hist(X((i-1)*p_dec+1:i*p_dec,i));
         
-        Xgibbs = zeros(GibbsDrawsPerSample,gsize);
+        Xgibbs = zeros(ChainLength,gsize);
         c_row = circshift(eye(n,1),i-1)';
         
-        %prepare the modified A matrix for the decision variable -- exclude
-        %the column of the current decision variable
-        if i==1
-            A_mod = A(:,2:end);
-        elseif i==n
-            A_mod = A(:,1:end-1);
-        else
-            A_mod = [A(:,i+1:end) A(:,1:i-1) ]; %note, matrix is circ shifted so start on i+1 column
-        end
-
-        if strcmp('reduce',matformat)  
-            %Develop the matrix to use to find a basic feasible solution to seed Gibbs
-            %see if there are any all zero rows in A_mod
-            v=[1:m];
-            zeroRows = v(sum(A_mod==zeros(m,n-1),2)==n-1);
-
-            if isempty(zeroRows)
-                %sprintf('empty')
-                A_exp = [A_mod eye(m,m-(n-1))]; %include first m-(n-1) slack variables
-            else
-                A_exp = A_mod;
-                [mAe nAe] = size(A_exp);
-                nZ = max(size(zeroRows));
-                for k=1:nZ
-                    A_exp = [A_exp circshift(eye(m,1),zeroRows(k)-1)];
-                end
-                %fill out the remaining columns to make square
-                %A_exp
-
-                if nAe+nZ < mAe
-                    A_exp = [A_exp circshift(eye(m,mAe-nAe-nZ),zeroRows(nZ))];
-                end              
-
-                %A_exp
-            end
-
-            zeroRowsAft = v(sum(A_exp==zeros(m,m),2)==m);
-            %size(A_exp)
-            %A_exp
-
-            %print out select variables
-            if 0
-               ['Cond   Rank   SparseRank']
-               sprintf('%f %f %f',cond(A_exp), rank(A_exp), sprank(sparse(A_exp)))
-
-               [A_maxRow, A_colind] = max(A_exp,[],2);
-               [A_maxCol, A_rowind] = max(A_maxRow);
-
-               LargestValue = A_exp(A_rowind,A_colind);
-
-               A_exp(A_rowind,:) = A_exp(A_rowind,:)/LargestValue;
-               sprintf('%f %f %f %f',cond(A_exp), rank(A_exp), sprank(sparse(A_exp)), LargestValue)
-            end
-        else
-            %Prepared a second modified A matrix that includes two additional
-            %rows to represent an equity constraint on the current decision
-            %variable - 1st added row is the less than, 2nd added row is the
-            %greater than
-            %A_add = [A; c_row; -c_row];
-            A_add = [circshift(A',i-1)'; eye(1,n); -eye(1,n)];
-        end
-        
-        %xBase = circshift(eye(n,1),i-1);
+           for j=1:pMainPerDec    
+                 
+                 
+               cRow = (lStrat-1)*pMainPerDec*ChainLength+(j-1)*ChainLength+1;
+               cRows = [cRow:cRow+ChainLength-1];
+                 
+               %Update the model formulation to include the new
+               %equity constrait representing the new sampled value
+               %for the l-th linear combo (objective)
+               problemstructCurr = problemstruct;
+               if isfield(problemstructCurr,'Aeq') && isfield(problemstructCurr,'beq')
+                   problemstructCurr.Aeq = [problemstructCurr.Aeq;c_row];
+                   problemstructCurr.beq = [problemstructCurr.beq;X(cRow,i)];
+               else
+                   problemstructCurr.Aeq = c_row;
+                   problemstructCurr.beq = X(cRow,i);
+               end
+               %Use Chebychev to draw an initial starting point
+               %(inside the inequality constraints, on the equality
+               %constriants)                      
+               x0 = chebycenterFull(problemstructCurr);
                
-        %A_exp_inv = inv(A_exp);
-        blNeedAStart = 1;
-        resid = 0;
-        j=1;
-        
-        while (j<=p_dec) && (sum(mPointLogs(lStrat,3:4),2)<=2*maxdrawpersample*p_dec) %Step 4 (iterate over the randomly sampled values)
-             %Step 3. Use the uniformly randomly sampled value for the decision variable to
-             %reduce the polytope dimension by 1, and gibbs sample the remaining
-             %decision variable values
-             
-             %xCurr = X((i-1)*p_dec+j,i)*xBase;
-             %b_mod = b - A*xCurr;
-             b_mod = b - A(:,i)*X((lStrat-1)*p_dec+j,i);
-             
-             %create the bounds associated with the equity constraint
-             b_add = [b; X((lStrat-1)*p_dec+j,i); -X((lStrat-1)*p_dec+j,i)];
-             
-             %test whether prior starting point is feasible and we can
-             %still use it to seed maxextent Gibbs
-             
-             if blNeedAStart == 0
+               if isempty(x0)
+                   %Try a different formulation to generate an initial
+                   %solution
+                   problemstructCurr.f = circshift(eye(n,1),i-2)';
+                   problemstructCurr.solver = 'linprog';
+                   problemstructCurr.options = optLPs;
+                   
+                   [x0, f_ret, f_flag] = linprog(problemstructCurr);
+                   if f_flag ~= 1
+                       problemstructAlt = problemstructCurr;
+                       v_lb = vExts(:,1);
+                       v_ub = vExts(:,2);
+                       v_lb(i) = X(cRow,i);
+                       v_ub(i) = X(cRow,i);
+                       problemstructAlt.lb = v_lb;
+                       problemstructAlt.ub = v_ub;
+                       [xO,f_ret,f_flag] = linprog(problemstructAlt);
+                       
+                       if f_flag ~= 1
+                           x0 = [];
+                           x0red = [];
+                       end
+                   end
+               end
+
+               [a_f,b_f] = OptimiFull(problemstructCurr);                 
+
                  if strcmp('reduce',matformat)
-                    resid = b_mod-A_mod*x0;
-                 else
-                     resid = b_mod - A*x0;
-                 end
-             end
-             
-             if 1
-             if (blNeedAStart) || (min(resid)<0) 
-                % We need to generate a new feasible initial point
-                %[mAEfin, nAEfin] = size(A_exp);
-                %[X_start, fopt,errorflag] = linprog(eye(n-1,1),A_mod,b_mod,[],[],[],[],[],struct('maxiter',1000,'Display', 'off'));
-                %Try optimizing. Minimize the current decision variable
-                %value subject to the original constraints, current decision variable is equal to the stratified sampled value, and other decision variables within their 
-                %maximum extents for other d 
-                [X_start, fopt,errorflag] = linprog(circshift(eye(n,1),i),A,b,c_row,X((lStrat-1)*p_dec+j,i),vExts(1:n,1),vExts(1:n,2),[],optLPs);
-             
-                %Log this optimization call
-                mPointLogs(lStrat,3) = mPointLogs(lStrat,3)+1;
-             
-                if errorflag ~= 1
-                	%Couldn't find a feasibile initial point
-                    Xgibbs(:,:) = NaN;
-                    %['i j Min Max Sampled ErrorFlag']
-                    %[i j mExtFull(2*i-1,i) mExtFull(2*i,i) X((i-1)*p_dec+j,i) errorflag]
-                    
-                    blNeedAStart = 1;
-                    %try sampling again along the stratified decision
-                    %varaible
-                    X((lStrat-1)*p_dec+j,i) = vExts(i,1) + (vExts(i,2)-vExts(i,1))*rand(1,1);
-                    
-                    continue  %return to the top and try again
-                else
-                    %initial solution is feasible
-                    mPointLogs(lStrat,2) = mPointLogs(lStrat,2)+1; %log as good init point
-                    blNeedAStart = 0;
-                    if strcmp('reduce',matformat)
-                        %x0 = [X_start(1:i-1); X_start(i+1:n)];
-                        x0 = [X_start(i+1:n); X_start(1:i-1)];
-                    else
-                        x0 = X_start;
-                    end
-                end
-             end
-             end
-             
-             %X_start = A_exp\b_mod; %1st row of X_start is ith+1 decision variable
-             %X_start = U\(L\b_mod);
-             %X_start = A_exp_inv*b_mod;
-             %x0 = X_start(1:n-1);
-             lGibbsDraws = 1;
-             blNeedValidSol = 1;
-             optMEGibbs.x0 = x0';
-             
-             %determine how many Gibbs samples to draw
-             if j + GibbsDrawsPerSample > p_dec
-                 CurrGibbsSamples = p_dec - j + 1;
-             else
-                 CurrGibbsSamples = GibbsDrawsPerSample;
-             end
-             sIndStart = (lStrat-1)*p_dec+j; %Start index
-             sIndEnd = (lStrat-1)*p_dec+j + CurrGibbsSamples - 1;
-             cRows = [sIndStart:sIndEnd]';
-             
-             while (any(vValid(cRows)<=0)) && (lGibbsDraws <= maxdrawpersample) && (j<=p_dec)  
-                 
-                 cStillToSample = vValid(cRows)<=0;
-                 lStillSample = sum(cStillToSample);
-                 
-                 if strcmp('reduce',matformat)
-                     %Xgibbs(j,:) = cprnd(1,A_mod,b_mod,struct('method','gibbs'));
-                      %Xgibbs(j,:) = maxextentgibbs(1,A_mod,b_mod,struct('extmethod','linalg'));                     
-                     Xgibbs(1:lStillSample,:) = maxextentgibbs(lStillSample,A_mod,b_mod,optMEGibbs);
+                     %Take the m x n matrix a_f and vector b_f and reduce
+                     %by the i-th column.
+                     
+                     a_f_red = a_f(:,i~=pList(fixeddims==1)');
+                     x_curr = zeros(n,1);
+                     x_curr(i) = X(cRow,i);
+                     b_f_red = b_f - a_f(:,i)*x_curr(i);
+                     
+                     if ~isempty(x0)
+                        x0red = x0(i~=pList(fixeddims==1));
+                     end
+                     
+                     optMEGibbs.x0 = x0red;
+                                          
+                       %Select the Monte Carlo Markov Chain sampler
+                       if strcmpi(MCMCMethod,sMCMCMethods{1})
+                            Xgibbs(1:ChainLength,:) = cprnd(ChainLength,a_f_red,b_f_red,struct('method','gibbs','isotropic',0,'x0',x0red));                          
+                       elseif strcmpi(MCMCMethod,sMCMCMethods{2})
+                           Xgibbs(1:ChainLength,:) = cprnd(ChainLength,a_f_red,b_f_red,struct('method','hitandrun','isotropic',0,'x0',x0red));  
+                       elseif strcmpi(MCMCMethod,sMCMCMethods{3})
+                           Xgibbs(1:ChainLength,:) = maxextentgibbs(ChainLength,a_f_red,b_f_red,optMEGibbs);     
+                       end
 
                      %Take the Gibbs results and put back in the larger matrix
                     if i==1
-                        X(cRows(cStillToSample),2:end) = Xgibbs(1:lStillSample,:);
+                        X(cRows,2:end) = Xgibbs(1:ChainLength,:);
                     elseif i==n
-                        %size(X)
-                        %size(Xgibbs)
-                        %[i (i-1)*p_dec+1 i*p_dec]
-                        X(cRows(cStillToSample),1:n-1) = Xgibbs(1:lStillSample,1:end);   
+                        X(cRows,1:n-1) = Xgibbs(1:ChainLength,1:end);   
                     else
-                        %size(X)
-                        %size(Xgibbs)
                         try
-                        X(cRows(cStillToSample),1:i-1) = Xgibbs(1:lStillSample,n-i+1:end);    
-                        X(cRows(cStillToSample),i+1:end) = Xgibbs(1:lStillSample,1:n-i);
+                            X(cRows,1:i-1) = Xgibbs(1:ChainLength,1:i-1);    
+                            X(cRows,i+1:end) = Xgibbs(1:ChainLength,i:end);
                         catch
                             sprintf('Error')
                         end
                     end
                  else
-                    Xgibbs(1:lStillSample,:) = maxextentgibbs(lStillSample,A_add,b_add,optMEGibbs);
-                    X(cRows(cStillToSample),:) = Xgibbs(1:lStillSample,:);
+                    if lGibbsToUse == 1
+                        Xgibbs(1:ChainLength,:) = maxextentgibbs(ChainLength,a_f,b_f,optMEGibbs);
+                    elseif lGibbsToUse == 2
+                        Xgibbs(1:ChainLength,:) =cprnd(ChainLength,a_f,b_f,struct('method','gibbs','isotropic',0,'x0',x0));
+                    end
+                    X(cRows,:) = Xgibbs(1:ChainLength,:);
                  end          
             
                 %Log this iteration
                 mPointLogs(lStrat,4) = mPointLogs(lStrat,4)+1;
-                lGibbsDraws = lGibbsDraws+1;
+                %lGibbsDraws = lGibbsDraws+1;
                 
                 %Test whether stratefied/gibbs sampled solution are feasible as well as feasible according to the
                 %constraints
-                vNaNs = any(isnan(Xgibbs(1:lStillSample,:)),2);
+                vNaNs = any(isnan(Xgibbs(1:ChainLength,:)),2);
                 
                 %Log the NaNs
                     mPointLogs(lStrat,5) = mPointLogs(lStrat,5)+sum(vNaNs); %Gibbs did not generate a solution, try again
-                    vValid(cRows(cStillToSample))=-vNaNs;
+                    vValid(cRows)=-vNaNs;
                    
                 %Test feasibility of non-NaN solutions against constraints
-                 if sum(vNaNs) < lStillSample
-                    dRows = cRows(cStillToSample(vNaNs==0));
-                    vResid = repmat(b,1,length(dRows)) - A * X(dRows,:)'; % Xgibbs(vNotNaNs,:);
+%                 if sum(vNaNs) < lStillSample
+                    dRows = cRows(vNaNs==0);
+                    vResid = repmat(b_f,1,length(dRows)) - a_f * X(dRows,:)'; % Xgibbs(vNotNaNs,:);
                     vConstViolates = sum(vResid<errorresid,1)';
                     mPointLogs(i,6) = mPointLogs(i,6)+sum(vConstViolates>0); %Solution was infeasible according to the constraints, try again
                     eRows = dRows(vConstViolates > 0);
                     vValid(eRows)= -2;
+                    
                 %Solution is feasible, can proceed to next 
                     try
                     vValid(dRows(vConstViolates==0)) = 1;
@@ -688,12 +709,10 @@ function [X,vValid,execTime] = stratgibbs(p,A,b,options)
                         sprintf(' ')
                     end
                     mPointLogs(lStrat,7) = mPointLogs(lStrat,7)+sum(vConstViolates==0);
-                 end   
+%                 end   
                 %[i j lGibbsDraws mPointLogs(i,4) vValid((i-1)*p_dec+j)]             
-             end
-             
-             j=j+CurrGibbsSamples; 
-        end
+           end
+           
         lStrat = lStrat+1; %move to next stratum
     end
       

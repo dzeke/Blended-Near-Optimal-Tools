@@ -1,5 +1,7 @@
-function [X, vXs] = maxextentind(A,b,options)
-% Finds and returns X -- an 2n x n matrix where each row represents a solution to the optimization problem with constraints Ax <= b. 
+function [X, vXs] = maxextentind(problemstruct,options)
+% Finds and returns X -- an 2n x n matrix where each row represents a solution to the optimization problem with
+%   inequality, equality, lower-, and upper-bound constraints defined in
+%   the problem structure problemstruct.
 % Row 1 represents the lower bound on x1, row 2 the upper bound on x1, rows 3 and 4 the lower and upper bounds on x2, etc.
 % Each row is independent of one another.
 %
@@ -14,10 +16,23 @@ function [X, vXs] = maxextentind(A,b,options)
 %       corresponds to variable i.
 %
 %  INPUTS
-%   A = an m-by-n matrix of constraint equation
-%        coefficients that includes both inequality, lower, and upper bound
-%        constraints. Constraints defined in the form AX <= b.
-%   b = a m-by-1 vector of constraint equation constants.
+%   problemstruct = a matlab optimization problem structure with the fields
+%      representing the various constraint portions of the optimization
+%      problem structure (empty if omitted)
+%       .Aineq = an m-by-n matrix of constraint equation
+%           coefficients that includes both inequality constraints
+%           defined in the form .Aineq X <= .bineq.
+%
+%       .bineq = a m-by-1 vector of constraint equation constants.
+%
+%   	.Aeq = a j by n matrix of equity constraint coefficients
+%
+%   	.beq = a j by 1 vector of the right hand side values for the
+%           equity constriants
+%
+%   	.lb = a j by 1 vector of lower bounds for the decision variables
+%
+%   	.ub = a j by 1 vector of upper bounds for the decision variables
 %
 %   options.extmethod = method used to find the extends. There are two options
 %      opt = by optimization (default)
@@ -28,29 +43,17 @@ function [X, vXs] = maxextentind(A,b,options)
 %       same result as the default value) -- allows for linear combinations
 %       of objectives
 %
-%   options.Aeq = a j by n matrix of equity constraint coefficients
-%
-%   options.Beq = a j by 1 vector of the right hand side values for the
-%       equity constriants
-%
-%   options.lB = a j by 1 vector of lower bounds for the decision variables
-%
-%   options.uB = a j by 1 vector of upper bounds for the decision variables
-%
 %   options.vFixed = 1 x n vector of booleans where one means to fix the
 %       the specified decision variable value at the value vFixedVal
 %
 %   options.vFixedVals = 1 x n vector of values to fixed the decision
 %       varaible value at (when vFixed == 1). Together, vFixed and
-%       vFixedVal augment rows in Aeq and Beq.
+%       vFixedVal augment rows in Aeq and beq.
 %
 %   options.UnfixCurrX = boolean value 1 to indicate to unfix the constraint on the
 %       current decision variable when that variable's range is being
 %       indentified (keeps fixed values for other variables)
 %       0 => keep all decision variable values fixed
-%
-%   options.Algorithm = the algorithm used to solve the underlying LP
-%       problem. See linprog.m for options. Default is not specified and uses Matlab's default.
 %    
 %   The maximum extent method works as follows:
 %    1. Start with the first decision variable (x1). Solve 2 optimization
@@ -58,17 +61,19 @@ function [X, vXs] = maxextentind(A,b,options)
 %    satisfy Ax <= b. i.e.:
 %
 %       Max x1                         Min x1
-%       such that Ax <= b       and    such that Ax < =b
-%                 Aeq x = Beq                    Aeq x = Beq
-%                 lB <= x <= uB                  lB <= x <= uB
+%       such that Aineq x <= bineq       and    such that Aineq x <= bineq
+%                 Aeq x = beq                    Aeq x = beq
+%                 lb <= x <= ub                  lb <= x <= ub
 %
-%       to get x1(-) and x1(+)
+%       to get x1(+)                    to get x1(-)
 %
 %    2. Repeat for each decision variable x2, ... xn 
 %
 % May 1, 2013
 % Updated July 2014 to include fixing decision variables at specified values and the unfixing current decision variable
 % Updated Dec 2014 to allow specifying the algorithm used to solve the underlying LPs
+% Updated Feb 2015 to specify problem formulation as a full Matlab
+%   structure
 
 % LICENSING
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
@@ -80,8 +85,20 @@ function [X, vXs] = maxextentind(A,b,options)
 % Environmental Engineering and Utah Water Research Lab, Utah State
 % Unviersity. david.rosenberg@usu.edu
 
-    n = size(A,2);                         % dimension
-    m = size(A,1);                         % num constraint ineqs
+%   Cross from full model specification to related value
+    %Check validity of full specification
+    [a_full,b_full] = OptimiFull(problemstruct);
+    
+    if isempty(a_full)
+        warning('Problem with problemstruct')
+        return
+    end
+
+    Aineq = problemstruct.Aineq;
+    bineq = problemstruct.bineq;
+
+    n = size(Aineq,2);                         % dimension
+    m = size(Aineq,1);                         % num constraint ineqs
     
     % Check input arguments
     
@@ -96,9 +113,9 @@ function [X, vXs] = maxextentind(A,b,options)
     objfunc = eye(n);
     lObjs = n;
     Aeq = [];
-    Beq = [];
-    lB = [];
-    uB = [];
+    beq = [];
+    lb = [];
+    ub = [];
     vFixed = zeros(1,n);
     vFixedVals = zeros(1,n);
     blUnfixCurrX = 0; %keep all fixed
@@ -109,12 +126,12 @@ function [X, vXs] = maxextentind(A,b,options)
     %% Read Optional Inputs
     
     %determine the method to use
-    if (nargin == 3) && (isstruct(options)) && isfield(options,'extmethod') && strcmp(lower(options.extmethod),'linalg')
+    if (nargin == 2) && (isstruct(options)) && isfield(options,'extmethod') && strcmp(lower(options.extmethod),'linalg')
         extmethod = 'linalg';
     end
     
     %determine if objective functions are specified
-    if (nargin == 3) && (isstruct(options)) && isfield(options,'objfunc')
+    if (nargin == 2) && (isstruct(options)) && isfield(options,'objfunc')
         objfuncTemp = options.objfunc;
         
         %verify the size of objfunc matche A
@@ -128,46 +145,46 @@ function [X, vXs] = maxextentind(A,b,options)
     end    
     
     %determine if equity constraints were passed
-    if (nargin==3) && (isstruct(options)) && isfield(options,'Aeq') && isfield(options,'Beq') && ~isempty(options.Aeq) && ~isempty(options.Beq)
-        AeqTemp = options.Aeq;
-        BeqTemp = options.Beq;
+    if isfield(problemstruct,'Aeq') && isfield(problemstruct,'beq') && ~isempty(problemstruct.Aeq) && ~isempty(problemstruct.beq)
+        AeqTemp = problemstruct.Aeq;
+        beqTemp = problemstruct.beq;
                 
         %check the sizing is correct
-        if (size(AeqTemp,2) ~= n) || (size(AeqTemp,1) ~= size(BeqTemp,1))
-            warning('Equity contraint parameters Aeq and Beq are improperly sized. Defaulting to no equity constraints')
+        if (size(AeqTemp,2) ~= n) || (size(AeqTemp,1) ~= size(beqTemp,1))
+            warning('Equity contraint parameters Aeq and beq are improperly sized. Defaulting to no equity constraints')
 
         else
             Aeq=AeqTemp;
-            Beq=BeqTemp;
+            beq=beqTemp;
         end
     end   
     
     %determine if lower bounds were passed
-    if (nargin==3) && (isstruct(options)) && isfield(options,'lB') && ~isempty(options.lB)
-        lBTemp = options.lB;
+    if (isstruct(problemstruct)) && isfield(problemstruct,'lb') && ~isempty(problemstruct.lb)
+        lbTemp = problemstruct.lb;
         
         %Check size is correct
-        if size(lBTemp,1) ~= n
-            warning('Lower bounds lB are improperly sized. Defaulting to no lower bounds')
+        if size(lbTemp,1) ~= n
+            warning('Lower bounds lb are improperly sized. Defaulting to no lower bounds')
         else
-            lB = lBTemp;
+            lb = lbTemp;
         end
     end
     
     %determine if upper bounds were passed
-    if (nargin==3) && (isstruct(options)) && isfield(options,'uB')  && ~isempty(options.uB)
-        uBTemp = options.uB;
+    if (isstruct(problemstruct)) && isfield(problemstruct,'ub')  && ~isempty(problemstruct.ub)
+        ubTemp = problemstruct.ub;
         
         %Check size is correct
-        if size(uBTemp,1) ~= n
-            warning('Upper bounds uB are improperly sized. Defaulting to no upper bounds')
+        if size(ubTemp,1) ~= n
+            warning('Upper bounds ub are improperly sized. Defaulting to no upper bounds')
         else
-            uB = uBTemp;
+            ub = ubTemp;
         end
     end
     
     %Read fixed decision variable inputs
-    if (nargin==3) && (isstruct(options)) && isfield(options,'vFixed') && isfield(options,'vFixedVals') && ~isempty(options.vFixed) && ~isempty(options.vFixedVals)
+    if (nargin==2) && (isstruct(options)) && isfield(options,'vFixed') && isfield(options,'vFixedVals') && ~isempty(options.vFixed) && ~isempty(options.vFixedVals)
         vFixedTmp = options.vFixed;
         vFixedValsTmp = options.vFixedVals;
                 
@@ -192,21 +209,14 @@ function [X, vXs] = maxextentind(A,b,options)
             end
             
             Aeq = [Aeq; AFixFull];
-            Beq = [Beq; BFixFull];
+            beq = [beq; BFixFull];
         end
     end   
     
     %determine if unfix current decision variable passed
-    if (nargin==3) && (isstruct(options)) && isfield(options,'UnfixCurrX')  && ~isempty(options.UnfixCurrX)
+    if (nargin==2) && (isstruct(options)) && isfield(options,'UnfixCurrX')  && ~isempty(options.UnfixCurrX)
         blUnfixCurrX = options.UnfixCurrX;
     end   
-    
-    %Algorithm
-    if (nargin==3) && (isstruct(options)) && isfield(options,'Algorithm')
-        Algorithm = options.Algorithm;
-    else
-        Algorithm = '';
-    end
     
 %% Begin Computations
     
@@ -228,9 +238,9 @@ function [X, vXs] = maxextentind(A,b,options)
            switch (extmethod)
                case 'linalg'
                    %Use linear algebra
-                   Ccurr = b./(A(:,j));
-                   fmin = max(Ccurr(A(:,j)<0));
-                   fmax = min(Ccurr(A(:,j)>0));
+                   Ccurr = b_full./(a_full(:,j));
+                   fmin = max(Ccurr(a_full(:,j)<0));
+                   fmax = min(Ccurr(a_full(:,j)>0));
                    fmaxexitflag = 1; fminexitflag = 1;
                    xmin = fmin;
                    xmax = fmax;
@@ -239,22 +249,23 @@ function [X, vXs] = maxextentind(A,b,options)
                    f = objfunc(:,j);
                    
                    AeqToUse = Aeq;
-                   BeqToUse = Beq;
+                   beqToUse = beq;
                    
                    if blUnfixCurrX && ismember(j,DfixedInd)
                       %Remove the row for the current decision variable from Aeq so the decision variable limits are no longer fixed
                       RowsToUse = ~ismember([zeros(lAeqEnd,1);DfixedInd'],j);
                       AeqToUse = Aeq(RowsToUse,:);
-                      BeqToUse = Beq(RowsToUse);
+                      beqToUse = beq(RowsToUse);
                    end
                    
-                   LPoptions = struct('maxiter',15000,'Display', 'off');
-                   if ~strcmpi(Algorithm,'')
-                       LPoptions.Algorithm = Algorithm;
+                   if isfield(problemstruct,'options') && ~isempty(problemstruct.options)
+                        LPoptions = problemstruct.options;
+                   else
+                       LPoptions = struct('maxiter',35000,'Display','off','Algorithm','simplex');
                    end
-                   [xmin, fmin, fminexitflag minoutput] = linprog(f,A,b,AeqToUse,BeqToUse,lB,uB,[],LPoptions);
+                   [xmin, fmin, fminexitflag minoutput] = linprog(f,Aineq,bineq,AeqToUse,beqToUse,lb,ub,[],LPoptions);
                    %if fminexitflag > 0
-                      [xmax, fmax, fmaxexitflag maxoutput] = linprog(-f,A,b,AeqToUse,BeqToUse,lB,uB,[],LPoptions);
+                      [xmax, fmax, fmaxexitflag maxoutput] = linprog(-f,Aineq,bineq,AeqToUse,beqToUse,lb,ub,[],LPoptions);
                       fmax = -fmax;
                    %end
            end

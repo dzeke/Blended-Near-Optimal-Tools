@@ -339,8 +339,8 @@ for i=1:nD
 end
 
 %Classify each alternative into a group for later plotting
-vGroupOrder = {'Near-optimal' 'MGA-GAMS-HSJ' 'MGA-HSJ' 'MGA-Serial' 'MGA-Simultaneous' 'Pareto' 'Optimum'}'; %This order ensures the optimum plots last on top and MGA on top of random interior
-vLineWidth = [1 2 2 2 2 3 3]';
+vGroupOrder = {'Near-Optimal' 'MGA-GAMS-HSJ' 'MGA-HSJ' 'MGA-Serial' 'MGA-Simultaneous' 'MGA-HSJ-Orig' 'Pareto' 'Optimum'}'; %This order ensures the optimum plots last on top and MGA on top of random interior
+vLineWidth = [1 2 2 2 2 2 3 3]';
 
 vGroupUse = zeros(1,length(vGroupOrder)); %indicator of whether group is actually used in this run
 OptSolRow = [];
@@ -384,7 +384,7 @@ if nPareto>0
         vGroupUse(end-1) = 1;
         OptSolRow = [OptSolRow nParetoStart];
         %Reassign the line widths because so many pareto solutions
-        vLineWidth = [1 1.5 1.5 1.5 1.5 2 2]';
+        vLineWidth = [1 1.5 1.5 1.5 1.5 1.5 2 2]';
         
         %Calculate near-optimal tolerance for second objective to allow deviations of the 2nd objective within values seen
         %when the first objective is optimized singly and separately. This is
@@ -412,11 +412,14 @@ vBFullKeep = vB;
 
 vEffFull = vEff; 
 %Identify global extents for decision variables
-[mExtents, mExtCompact] = maxextentind(mAFull,vBFull);
+%[mExtents, mExtCompact] = maxextentind(mAFull,vBFull);
+probdef.Aineq = mAFull;
+probdef.bineq = vBFull;
+[mExtents,mExtCompact] = maxextentind(probdef);
 
 %Summarize work so far
 sprintf('Number of alternatives/solutions loaded from GAMS: %d',nV)
-[vGroupOrder([end:-1:6 2]) num2cell([nHSJstart-1;nPareto;nHSJ])]
+[vGroupOrder([end:-1:7 2]) num2cell([nHSJstart-1;nPareto;nHSJ])]
 
 
 % STEP 2. Stratify random sample inside the polyhedron defined by the
@@ -484,9 +487,31 @@ if sum(pIntOrig) > 0
     %Generate near-optimal alternatives by stratified gibbs sampling within
     %the near-optimal region. Exclude decision variables that are constant in the vertex set
     %Split the samples 85% / 15% between the decision variable axes and
-    %objective function axes
-    [NewP,vValid,sampleTime] = stratgibbs(pIntOrig*[0.85 0.15],mAFull(:,vKeep),vBFullKeep,struct('lincombo',cVeff,'extmethod','opt', ...
-            'x0',mAreas(3,vKeep)','errorresid',0,'Algorithm','interior-point','GibbsDrawsPerSample',1));
+    %objective function axes. Draw two Monte Carlo Markov chain samples per
+    %group sample (chains of length 2 samples)
+    
+    % Full version of the model that uses decision variables of stream-bank
+    % length and land area. Convert into phosphorus removed after
+    % sampling. Also, puts the constraints for non-negative decision variables
+    % in the Matlab .lb field which linprog handles better when
+    % significantly reducing the near-optimal tolerance to 1 to generate
+    % multiple optima. The original version has the non-negativity
+    % constraints (x >= 0) as rows 41:79 in mAFull <= vBFullKeep (- x <= -0).
+    
+    %Full version
+      %problStruct.Aineq = mAFull(:,vKeep);
+      %problStruct.bineq = vBFullKeep;
+
+    %Move lower-bounds into proper location
+     problStruct.Aineq = mAFull(1:40,vKeep);
+     vBtemp = vBFullKeep(1:40);
+     %vBtemp(40) = fopt;
+     problStruct.bineq = vBtemp;
+     problStruct.lb = zeros(39,1);
+   [NewP,vValid,sampleTime] = stratgibbs(pIntOrig*[0.85 0.15],problStruct,struct('lincombo',cVeff,'extmethod','opt', ...
+            'x0',mAreas(3,vKeep)','errorresid',0,'Algorithm','interior-point','ChainLength',2,'MCMCMethod','cprnd-gibbs')); % alg = interior-point
+
+    
     %[NewP,vValid,objvals] = stratgibbs(pInt,mAFull(:,vKeep),vBFullKeep,struct('lincombo',cVeff','extmethod','opt','x0',mAreas(3,vKeep)','errorresid',0));
    
     %eliminate invalid (infeasible) samples (shouldn't happen, but sometimes does for computational issues)
@@ -586,7 +611,7 @@ if sum(pIntOrig) > 0
     end
     
     %Tally thes summary statistics for the group
-    GroupSummaryStratSample = [vGroupOrder(1) '-' num2cell(pInt) num2cell(sampleTime) num2cell(pInt/sampleTime) num2cell(0) num2cell(0) sprintf('%d of %d infeas',vMatViolates,pIntRet)];        
+    GroupSummaryStratSample = [vGroupOrder(1) '-' num2cell(pInt) num2cell(sampleTime) num2cell(pInt/sampleTime) num2cell(0) num2cell(0) sprintf('%d of %d feas',pIntRet-vMatViolates,pIntRet)];        
 end
 
 mValuesU = [mObjs mDecisions];
@@ -600,8 +625,19 @@ mAFullPhos(1:vConstraintInds{4,2},:) = mAFull(1:vConstraintInds{4,2},:)./mEff(1:
 mARet=    mAFullPhos(:,vKeep);  %mAFull(:,vKeep) ;
 vBRet = vBFullKeep;
 
+%check that the transformation to Phosphorus removed still maintains
+%optimum
+
+[xPhosOpt, fPhosOpt, fPhosError] = linprog(cV(1,:),mARet,vBRet);
+fPhosOpt
+[vLabelLong num2cell(xPhosOpt)]
+
+sprintf('Minimum objective function value %.f', min(mObjs))
+sprintf('Compare Optimal solutions\nObjective Function:')
+
 %Output the Decision value and objective function ranges
 sprintf('Ranges for decision variables across alternatives:')
+{'Variable' 'Min' 'Max'}
 [vLabelLong num2cell(mExtCompact.*[vEffFull(vKeep)' vEffFull(vKeep)'])]
 sprintf('Objective Function range(s):')
 num2cell([min(mObjs); max(mObjs)])
@@ -624,16 +660,29 @@ if mgaSz > 0
   vLineWidthInsert = [];
   
   for i=1:size(MGAMethods,1)
-    sprintf('Now running %s', vGroupOrder{2+MGAMethods(i,1)})
+    if MGAMethods(i,1) == 5
+        lMGAIndex = length(vGroupOrder)-2;
+    else
+        lMGAIndex = 2+MGAMethods(i,1);
+    end
+    sprintf('Now running %s', vGroupOrder{lMGAIndex})
     %Run MGA
-    [xMGA, pMGA, MinDist, mIterInfo, RetFlag, RetText, rTime] = doMGA(mDecisions(OptSolRow(1:1+blAddPareto),:),struct('A',mARet,'b',vBRet,'MaxAlts',MGAMethods(i,3),'StopTime',MGAStopTime,'errorcrit',0,'MGAType',MGAMethods(i,1),'StopDistance',0.2,'SolveAsGA',MGAMethods(i,2),'IgnoreStartPoint',0));
-    % NOTE: MGA-HSJ gives very different results (fewer alternatives) when
-    % using a different problem scaling -- e.g., decision variables in terms of
-    % area/length not phosphorus removed
-        %[xMGA, pMGA, MinDist, mIterInfo, RetFlag, RetText, rTime] = doMGA(mAreas(OptSolRow(1),:),struct('A',mAFull,'b',vBRet,'MaxAlts',MGAMethods(i,3),'StopTime',MGAStopTime,'errorcrit',1e-6,'MGAType',MGAMethods(i,1),'StopDistance',0.2,'SolveAsGA',MGAMethods(i,2),'IgnoreStartPoint',0));
-        %xMGA = 100*xMGA;
+    if MGAMethods(i,1)==5
+        % Instead run HSJ on the original model version 
+        % using a different problem scaling -- e.g., decision variables in terms of
+        % area/length not phosphorus removed
+        [xMGAAreas, pMGA, MinDist, mIterInfo, RetFlag, RetText, rTime] = doMGA(mAreas(OptSolRow(1),:),struct('A',mAFull,'b',vBRet,'MaxAlts',MGAMethods(i,3),'StopTime',MGAStopTime,'errorcrit',1e-6,'MGAType',1,'StopDistance',0.2,'SolveAsGA',MGAMethods(i,2),'IgnoreStartPoint',0));
+        %Convert from land area/stream bank length units back to phosphorus
+        %removed
+        if pMGA>0
+            xMGA = xMGAAreas.*mEff(1:pMGA,:);        
+        end
+    else
+        [xMGA, pMGA, MinDist, mIterInfo, RetFlag, RetText, rTime] = doMGA(mDecisions(OptSolRow(1:1+blAddPareto),:),struct('A',mARet,'b',vBRet,'MaxAlts',MGAMethods(i,3),'StopTime',MGAStopTime,'errorcrit',0,'MGAType',MGAMethods(i,1),'StopDistance',0.2,'SolveAsGA',MGAMethods(i,2),'IgnoreStartPoint',0));
+    end
+
     %Add group labels for these alternatives
-    vGroupOrderCurr = vGroupOrder(2+MGAMethods(i,1));    
+    vGroupOrderCurr = vGroupOrder(lMGAIndex);    
     
     %Add MGA alternatives to the existing alternatives
     if (RetFlag>=0) && (pMGA>0)
@@ -648,9 +697,9 @@ if mgaSz > 0
             currGRep = GroupCount(MGAMethods(i,1))- GroupCountTemp(MGAMethods(i,1))+1;
             vGroupOrderCurr = {sprintf('%s%d',vGroupOrderCurr{:},currGRep)};
             vGroupInsert = [vGroupInsert;vGroupOrderCurr];
-            vLineWidthInsert = [vLineWidthInsert;vLineWidth(2+MGAMethods(i,1))];
+            vLineWidthInsert = [vLineWidthInsert;vLineWidth(lMGAIndex)];
         else
-            vGroupUse(2+MGAMethods(i,1)) = 1;  
+            vGroupUse(lMGAIndex) = 1;
         end
         vRowCatLabel = [vRowCatLabel; repmat(vGroupOrderCurr,pMGA,1)];
         %Turn the group on
@@ -674,13 +723,22 @@ if blAddPareto == 1 %Changes for plotting a multi-objective problem
     %Augment matrixes with one additional row representing total phosphorus
     mARet = [mARet;-ones(1,nD)];
     vBRet = [vBRet;-sum(vBRet(1:3))];
+    vRowsToUse = [1:40 size(mARet,1)]';
     mAxisBounds = [900000 0 zeros(1,39); 1.1e6 16000 16000*ones(1,39)];
-    lNearOptConstraint = [lNearOptConstraint; length(vBRet)]';
+    lNearOptConstraint = [lNearOptConstraint; length(vRowsToUse)]';
     lShowInsetPlot = 1;
 else %strip out pareto solutions and changes to plot a single-objective problem  
     mAxisBounds = [900000 zeros(1,39); 1.3e6 13000*ones(1,39)];    
     lShowInsetPlot=0;
+    vRowsToUse = [1:40]';
 end
+
+%Model formulation with decision variables in units of phosphorus removed, objective function - cV
+ProblemData.Aineq = mARet(vRowsToUse,:);
+ProblemData.bineq =  vBRet(vRowsToUse);
+ProblemData.lb = zeros(39,1);
+
+
 
 %Insert the added MGA groups in the master list
 
@@ -698,7 +756,7 @@ rBack = cumsum(rToKeep); %Reverse mapping
 
 %Show the results for the different MGA methods
 for i=1:size(MGAMethods,1)
-    if ismember(MGAMethods(i,1),[1 2])
+    if ismember(MGAMethods(i,1),[1 2 5])
         vGroupOrder{2+MGAMethods(i,1)}
         lLength = length(vDistLog{i});
         [num2cell([1:lLength]') num2cell(vDistLog{i})]
@@ -714,8 +772,8 @@ mGroupData = [vGroupShort num2cell(ones(length(vGroupShort),1)) num2cell(vLineWi
 
 %Define the optional parameters needed to plot in parallel coordinates
 vParams = {'Tolerance',Gamma,'FontSize',20,'GroupToHighlight',iGroupToHighlight,'mActCat',vLabelLong(:,[1:2]),'vGroup',vRowCatLabel(rToKeep),'mGroupData',mGroupData, ...
-       'vObjLabels',vObjLabels,'vXLabels',vLabelFull,'yAxisLabels',{'Removal Cost ($)' 'Phosphorus Removal (kg)'},'AMat',mARet, ...
-       'Brhs', vBRet,'cFunc',cV,'AxisScales','custom',[1 1],mAxisBounds,'NumTicks',5,'NearOptConstraint',lNearOptConstraint,'OptSolRow', rBack(OptSolRow)', ...
+       'vObjLabels',vObjLabels,'vXLabels',vLabelFull,'yAxisLabels',{'Removal Cost ($)' 'Phosphorus Removal (kg)'},'ProbForm',ProblemData, ... %'AMat',mARet,'Brhs', vBRet, 'cFunc',cV
+       'cFunc',cV,'AxisScales','custom',[1 1],mAxisBounds,'NumTicks',5,'NearOptConstraint',lNearOptConstraint,'OptSolRow', rBack(OptSolRow)', ...
        'StartTab',1,'GenerateType',3,'GenerateMethod',2,'ShowObjsDiffColor',0,'ShowGroupLabels',1,'NumSamples',pIntOrig,'HideCheckboxes',1 ...
        'ShowControls',0,'ShowInsetPlot',lShowInsetPlot,'YAxisMargins',[0.5 0.5]};
    

@@ -45,7 +45,7 @@
 % #### Figure 1 ####
 % Figure 1.	Comparison of the optimal solution and Modelling to Generate Alternatives (MGA) results 
 % to the near-optimal region for an example two-decision problem with a quadratic objective function, 
-% four linear constraints, tolerable deviation of ?=1.80, and generation density of 0.5 alternatives per decision 
+% four linear constraints, tolerable deviation of gamma=1.80, and generation density of 0.5 alternatives per decision 
 % variable for the MGA-Serial method that is three times larger than the density reported in any prior application.
 %
 % The last setting of zero automatically labels the countours. Set to 1 to
@@ -92,7 +92,7 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 3. Compare optimal solut
 
 % Interactive Steps To Shift, Increase stream bank stabilization
 %   1. Generate Figure 3. At the commnad prompt paste:
-%           >> [mResult nO vParams] = NearOptimalLP2('WQNE_outG6.gdx',3,2500,0,[2 0 50]);
+%           >> [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[2 0 50]);
 %   2. Once the figure finally loads, show the control panel. From the Controls menu=>uncheck Hide all
 %       controls
 %   3. Click the Interact tab
@@ -237,29 +237,31 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi
 % Interactive Steps to generate alternatives that remove a lot of phosphorus
 %   1. Generate Figure 5. At the commnad prompt paste:
 %          >> [mResult nO vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,1,[2 0 50]);
-%   2. Once the figure finally loads, click the Interact tab
-%   3. Just above the Generate New Alternatives box, enter 0.65 for the
+%   2. Once the figure finally loads, show the control panel. From the Controls menu=>uncheck Hide all
+%       controls
+%   3. Once the figure finally loads, click the Interact tab
+%   4. Just above the Generate New Alternatives box, enter 0.65 for the
 %       Allowable Deviation (this setting will select alternatives that have
 %       values of the (Set value +/- Error). Here error is measured as a
 %       fraction of the tick spacing (0.65 of the tick spacing of 4000 = 
-%   4. From the Controls Menu=>Sliders=>uncheck Hide sliders (show them).
+%   5. From the Controls Menu=>Sliders=>uncheck Hide sliders (show them).
 %       Sliders will appear on the plot all set to minimum allowable values
-%   5. Set the slider for the Phos. Removed axis to it's upper extent.
+%   6. Set the slider for the Phos. Removed axis to it's upper extent.
 %       Or in the Filter Exisiting Alternatives box,
 %       enter 14450 kg in text box for the axes and check the box below the axis on the plot.
 %       Other the ranges for other sliders will update.
-%   6. In the Generate New Alternatives box, click the Generate button. The
+%   7. In the Generate New Alternatives box, click the Generate button. The
 %       command window will update with info on the alternative generation. A new group of
 %       lines will add to the plot (in purple).
-%   7. Format the plot to compare to previous settings.
+%   8. Format the plot to compare to previous settings.
 %        - Click the Display tab
 %        - Enter a new name for the new second group that is now in purple (e.g, 'Large phos. removal' 
 %        - Change the Ord (Order) for this group from 2 to 3.
-%        - Similarly, change the order for the MGA group to 2 to 3
+%        - Similarly, change the order for the MGA group to 2 from 3
 %        - Click the Reorder Groups button
 %        - Hide the sliders and check boxes (Controls menu=>Sliders=>check
 %           Hide sliders; Controls menu=>Axes checkboxes=>Hide checkboxes)
-%    8. Retitle the figure. At the command prompt, enter:
+%    9. Retitle the figure. At the command prompt, enter:
 %           >> set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 6. Alternatives that remove lots of phosphorus');
 %   
 
@@ -271,28 +273,28 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi
 %    
 % Interactive Steps To Generate alternatives in an expanded near-optimal region
 %   1. Generate Figure 3. At the commnad prompt paste:
-%          >> [mResult nO vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[3 0 10]);
-%   2. Once the figure finally loads, click the Interact tab
-%   3. Set the Near Optimal Tolerance to 1.25
+%          >> [mResult nO vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[2 0 50]);
+%   2. Once the figure finally loads, show the control panel. From the Controls menu=>uncheck Hide all
+%       controls
+%   3. On the Interact tab, set the Near Optimal Tolerance to 1.25
 %   4. In the Generate New Alternatives box, click the Generate button. The
 %       command window will update with info on the alternative generation. A new group of
 %       lines will add to the plot (in purple).
 %   5. Format the plot to compare to previous settings.
 %        - Click the Display tab
-%        - Enter a new name for the new second group in purple (e.g, 'Tolerance 1.25' 
+%        - In the Group Traces pane, enter a new name for the new second group in purple (e.g, 'Tolerance 1.25' 
 %        - Change the Ord (Order) for the 2nd purple group from 2 to 1.
 %        - Similarly, change the order for the first green group from 1 to
 %        2ide it)
-%        - Uncheck the MGA group (to hide it)
+%        - Uncheck the MGA-Serial group (to hide it)
 %        - Click the Reorder Groups button and the Tolerance 1.25 group
-%        will plot behind the prior Near-optimal 1.10 group and it is possible to see
+%        will plot in green behind the prior Near-optimal 1.10 group (now purple) and it is possible to see
 %        the effects of expanding the near-optimal tolerance from 110% (original) to 125% (new group).
-%   6. To show the color ramp of effects of all changes from 1.0 to 1.25:
+%   6. To show the color ramp of continuous effects of all changes from 1.0 to 1.25:
 %        - Click the Color Ramp tab
 %        - Enter the # Color classes as 5
 %        - Set Direction to Descend
-%        - Check the box associated with the Removal Cost axis (far left
-%        axis)
+%        - Check the box associated with the Removal Cost axis (far left parallel coordinate axis)
 %        - On the Color Ramp tab, check the box labeled Ramp color. The
 %           color ramp will appear. Additionally, a checkbox for each color band
 %           will appear on the Color Ramp tab. Uncheck one or more bands to hide the traces
@@ -350,7 +352,7 @@ if strcmpi(bReply,'Yes')
     %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
     %      c. To see which variables are below the extents identified by stratified sampling, enter the commands:
     %           >> actFull = [ no_vargs{24} no_vargs{48}' ]
-    %           >actFull(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+    %           >> actFull(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
     %      d. To see similar results for GAMS model with land area and stream
     %         bank lenght decision variables, sbustitute 'MGA-GAMS-HSJ' for
     %         'MGA-HSJ', e.g.
@@ -370,9 +372,20 @@ if strcmpi(bReply,'Yes')
     %              save the data to the base workspace.
     %      b. To see the number of decision variables below the extents of
     %           stratified sampled near-optimal alternatives, enter the commend:
-    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
-
-
+    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ')+strcmpi(no_vargs{26},'MGA-Serial')+strcmpi(no_vargs{26},'MGA-Sequential')>0,:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+    %
+    % E) Compare more closely HSJ formulations
+          [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[1 0 50; 4 0 0; 5 0 0]);
+          set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 5: All HSJ results');   
+          % MGA-GAMS-HSJ = on original model formulation with land
+          %     area/streambank length decision variables in GAMS
+          % MGA-HSJ = on current version of the model with phosphorus
+          %     remval variables in Matlab
+          % MGA-HSJ-Orig = on original model formulation with land
+          %     area/streambank length decision variables in Matlab
+          %
+          % MGA-GAMS-HSJ and MGA-HSJ-Orig should be the same but differ
+          % slightly because of the LP solvers used (multiple optimal on each HSJ solve)
     
     % 
 end

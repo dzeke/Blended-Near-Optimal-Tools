@@ -390,6 +390,9 @@ function [Fig1,Fig2] = Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tole
     neColor = [.316 1 .316]; %pink for near-optimal color
 
     sOptText = sprintf('f*(%.0f,%.0f)=%.0f',x1opt,x2opt,zopt);
+    
+    vDistStore = {};
+    lDistLogged = [];
 
     if IncludeNE
 
@@ -421,8 +424,7 @@ function [Fig1,Fig2] = Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tole
 
           sColor = zeros(5,3); %[0 0 0;0.316 0 0.316; 0.526 0 0.526];
           sColor(3,:) = [0.6 0.06 0.06];
-          vDistStore = {};
-          lDistLogged = [];
+
           %Loop through the alternative generation methods
           for i=1:mgaSz
 
@@ -531,9 +533,18 @@ function [Fig1,Fig2] = Fig1_FeasibleNearOptCompare(c, A, rel, b, direction, tole
     bsamp = [bsamp; zeros(2,1)];
 
     NewP = [CornerPts; vert'];
-    vValid = ones(size(NewP,1),1);
+    vValid = ones(size(NewP,1),1);   
+    
+    %Build the optimization model formulation to pass to the sampling
+    %routine
+      ModelForm.Aineq = Asamp;
+      ModelForm.bineq = bsamp;
+      %ModelForm.lb = zeros(2,1); %Non-negativity constraints
+      ModelForm.solver = 'linprog';
+      ModelForm.options = struct('Algorithm','simplex','Display','off');
+    
 
-    [SampledP,vSampValid, sgRunTime] = stratgibbs(2500,Asamp,bsamp,struct('extmethod','opt','x0',[x1opt x2opt],'errorresid',0,'Algorithm','simplex','GibbsDrawsPerSample',1));
+    [SampledP,vSampValid, sgRunTime] = stratgibbs(2500,ModelForm,struct('extmethod','opt','x0',[x1opt x2opt],'errorresid',0,'GibbsDrawsPerSample',1));
 
     NewP = [NewP; SampledP];
     vValid = [vValid; vSampValid];

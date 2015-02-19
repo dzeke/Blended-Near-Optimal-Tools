@@ -27,7 +27,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %       alterantives, e.g., for near-optimal analysis. There are three data sources available to use to generate
 %       new alternatives: i) the data matrix itself (querying, i.e., a form of brushing), 2)
 %       MATLAB (for linear programs using data specified in the objective
-%       function vector(s) cFunc and constraint matrix [AMat and Brhs]), and 3) executing a GAMS
+%       function vector(s) cFunc and a ProbForm structure that defines the inequality, equity, lower-, and upper-bound
+%       contraints), and 3) executing a GAMS
 %       file (note, you will need to install GAMS, see www.gams.com). The
 %       methods can generate: a) one solution, b) the maximum extents
 %       representing the minimum and maximum values given current selected
@@ -46,7 +47,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %       or constraints and generate new alternatives from the updated
 %       formulation (available only if the underlying problem is linear and
 %       the existing objective function and constraint coefficients are
-%       passed as optional parameters cFunc, AMat, and Brhs -- see #8 and
+%       passed as optional parameters cFunc and ProbForm -- see #8 and
 %       further description of optional inputs below)
 %
 %   8) Optional parameters/settings for each of the above features #2-7 to control how the parallel
@@ -105,6 +106,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %     NumSamples = number of random samples to add when randomly sampling
 %          additional poionts within the polytope defined by AMat and Brhs
 %          (Default value = 0)
+%
+%     ObjSamplesPercent = the percent of samples to concentrate and
+%          stratify along objective function axes/strata when stratify
+%          sampling. Remaining samples are drawn from the decision variable
+%          axes. (Default value= 15%)
 %
 %     sGamsFile = string with path and filename of GASMS file to run
 %           that can generate new solutions to bring into the analysis (Default value: '') 
@@ -312,14 +318,37 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %              show them as part of the axis label. e.g., a TickMag of 4 would cause
 %              a tick value of 1,000,000 to be shown as 100 and the y axis
 %              label to read "Value (10^4)". (Default value = 5)
-%                
-%     AMat = lCon by nD matrix of coeffiecients for the lCon constraints
+%     
+%     ProbForm = a Matlab structure for the linear programming formulation that defines the
+%           inequality, equity, lower-bound, and upper-bound constraints for the problem
+%           as the fields
+%               .Aineq = lCon x n matrix of inequality constraint coefficients
+%               .bineq = mlCon x 1 vector of right-hand side constraint coefficients for inequality constraints
+%               .Aeq  = q x n matrix of equality constraint coefficients          
+%               .beq  = q x 1 vector of right-hand side constraint
+%                       coefficients for equality constraints
+%               .lb   = n x 1 vector of lower-bound limits for decision
+%                           variables
+%               .ub   = n x 1 vector of upper-bound limits for decision
+%                       variables
+%            (i.e., .Aineq x X <= .bineq ; .Aeq x X = .beq; X >= .lb; X <= .ub)
+%            Other fields of ProbForm used as is, but do not pass objective
+%            function as f. Rather use cFunc (see below).
+%
+%               .solver = solver to use solve the model (Default: linprog)
+%               .options = options to pass to the solver (Default:
+%               structure with interior-point algorithm, maxiter 35000,
+%               display off
+%
+%           (Default value [] for structure or [] for fields)
+%
+%     AMat = OLD WAY OF HANDLING CONSTRAINTS lCon by nD matrix of coeffiecients for the lCon constraints
 %           in the underlying linear optimization problem associated with the
 %           data provided. This parameter, along with Brhs and possibly cFunc, is used when clicking the 'Generate' button on the
 %           Interact tab to sample new alternatives. Constraints need to be defined in
 %           form AMat * X <= Brhs (default value [])
 %
-%     Brhs = column vector of lCon elements whose values are the right hand side
+%     Brhs = OLD EAY OF HANDLING CONSTRAINTS column vector of lCon elements whose values are the right hand side
 %           of the constraints that define the system of equations from which to generate additional alternatives.
 %           i.e., AMat * X <= Brhs. (Default value [])
 %
@@ -330,10 +359,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %           The underlying optimization problem for the first
 %           objective (row) in cFunct is defined as:
 %              Min Z1 = cFunc(1,:)*X
-%               subject to: AMat * X <= Brhs
+%               subject to: constraints in ProbForm
 %           (Default value [])
 %
-%`    NearOptConstraint = Index that references a row in AMat that is the
+%`    NearOptConstraint = Index that references a row in ProbForm.Aineq that is the
 %           near-optimal tolerable deviation constraint. For a multi-objective problem, this
 %           will be a (1 x nO) vector of indexes. Together with cFunc and OptSolRow
 %           (below) this parameter is used to update the near-optimal constraint
@@ -433,7 +462,9 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %   vObjsVert = mVert*c'; %Calculate objective function values for the vertices
 %   vGroups = ['Optimum'; repmat({'Vertices'},length(vObjsVert),1)];
 %   mGroupData = ['Vertices' {1} {1.5}; 'Optimum' {1} {2.5}];
-%   nearoptplotmo2([-fopt;vObjsVert],[Xopt';mVert],'Tolerance',0.85,'AMat',[A;-c],'Brhs',[b;fopt],'cFunc',c,...
+%   ProbForm.Aineq = [A;-c];
+%   ProbForm.bineq = [b;fopt];
+%   nearoptplotmo2([-fopt;vObjsVert],[Xopt';mVert],'Tolerance',0.85,'ProbForm',ProbForm,'cFunc',c,...
 %       'OptSolRow',1,'NearOptConstraint',7, 'ShowObjsDiffColor',0,'vGroup',vGroups,...
 %       'mGroupData',mGroupData,'GroupToHighlight','Optimum','GenerateType',3,'GenerateMethod',2,'NumSamples',p);
 %
@@ -498,6 +529,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     Tolerance = ones(1,nO);
     AllowableDeviation = 0;
     NumSamples=0;
+    ObjSamplesPercent = 15; %Percent of samples drawn from objective function axes/strata
     Precision=2;
     vFixed = zeros(n,1);
     vFixedVals = vFixed;
@@ -536,6 +568,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     mHighlightColor=[0 0 0];
     
     vMaxValues = max(mDecisions);
+    ProbForm = []; ProbFormTemp=[];
     AMat = []; AMatTemp=[];
     Brhs = []; BrhsTemp=[];   
     cFunc = []; cFuncTemp=[];
@@ -603,6 +636,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'NumSamples'))            
                 NumSamples = varargin{count+1};
+                count=count+1;
+                
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'ObjSamplesPercent'))            
+                ObjSamplesPercent = varargin{count+1};
                 count=count+1;
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'GenerateType'))            
@@ -786,7 +823,15 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
              elseif (ischar(varargin{count}) && strcmpi(varargin{count},'ShowObjsDiffColor'))
                 lShowObjsDiffColor = varargin{count+1};
                 count=count+1;              
-  
+ 
+            elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'ProbForm'))
+                ProbFormTemp = varargin{count+1};
+                if ~strcmpi(class(ProbFormTemp),'struct')
+                    warning('nearoptplotmo2: ProbForm is not a structure. Defaulting to no problem formulation');
+                    ProbFormTemp = [];
+                end
+                count=count+1;
+                
             elseif  (ischar(varargin{count}) && strcmpi(varargin{count},'AMat'))
                 AMatTemp = varargin{count+1};
                 if strcmpi(AMatTemp,'cell')
@@ -1049,27 +1094,51 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         end
         count=count+3;
         
-        %Further error checking on AMat and Brhs          
-        if ~isempty(AMatTemp) || ~isempty(BrhsTemp)
-            if ~isempty(AMatTemp)
-               if (size(AMatTemp,2) == nD)
-                    if (size(AMatTemp,1) == size(BrhsTemp,1))
-                         AMat = AMatTemp;
-                         Brhs = BrhsTemp;
-                         cFunc = cFuncTemp;
-                         blValidLinProgramData = 1;
-                    else
-                         warning(['nearoptplotmo2: # rows of AMat and Brhs are different.', ...
-                    ' Continuing with default of empty inputs.'])
-                    end
-                else
-                    warning('nearoptplotmo2: # columns of AMat must equal number of columns of mDecision. Reverting to default empty AMat, Brhs, cFunc inputs')
-                end
-             else
-                warning('nearoptplotmo2: need to define both an AMat and Brhs. No AMat. Reverting to default empty inputs for both and cFunc.')
-            end
-        end     
+        %Further error checking on the ProbForm structure
+        if ~isempty(ProbFormTemp)
+            [AMatTemp,BrhsTemp] = OptimiFull(ProbFormTemp);
             
+            if ~isempty(AMatTemp)
+                if (size(AMatTemp,2) ~= nD)
+                    warning(['nearoptplotmo2: # columns of ProbForm data inconsistent with other data passed. Reverting to default of empty constraints'])
+                else
+                    AMat = AMatTemp;
+                    Brhs = BrhsTemp;                    
+                    cFunc=cFuncTemp;
+                    blValidLinProgramData = 1;
+                    
+                    %Set empty fields of ProbForm to default values of []
+                    %for convienence later in retrieving and working with
+                    %values
+                    if ~isfield(ProbFormTemp,'Aineq')
+                        ProbFormTemp.Aineq = [];
+                        ProbFormTemp.bineq = [];
+                    end
+                    if ~isfield(ProbFormTemp,'Aeq')
+                        ProbFormTemp.Aeq = [];
+                        ProbFormTemp.beq = [];
+                    end
+                    if ~isfield(ProbFormTemp,'lb')
+                        ProbFormTemp.lb = [];
+                    end
+                    if ~isfield(ProbFormTemp,'ub')
+                        ProbFormTemp.ub = [];
+                    end
+                    
+                    %Set default fields for solver and options if not
+                    %defined
+                    if ~isfield(ProbFormTemp,'solver')
+                        ProbFormTemp.solver = 'linprog';
+                    end
+                    if ~isfield(ProbFormTemp,'options')
+                        ProbFormTemp.options = struct('maxiter',15000,'Display', 'off','Algorithm','interior-point');
+                    end
+                   
+                    ProbForm = ProbFormTemp;
+                end
+            end
+        end
+        
          %Further error testing on parameters needed to generate alternatives       
          if (GenMethod==2) && (isempty(AMat) || isempty(Brhs) || isempty(NearOptConstraint) || isempty(OptSolRow))
             warning('nearoptplotmo2: To generate alternatives by Matlab linear programming, must define AMat, Brhs, NearOptConstraint, and OptSolRow inputs. Setting GenerateMethod engine to Data and other inputs to empty.');
@@ -1860,10 +1929,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %Rebuild the variable argument list to pass along through the controls
     
 %    if strcmpi(AxisScales,'custom')
-        vararg_curr = {'hWind' hWindReturn 'Tolerance' Tolerance 'AllowableDeviation' AllowableDeviation 'NumSamples' NumSamples 'vFixed' vFixed 'Precision' Precision 'vFixedVals' vFixedVals ...
-                'vStep' vStep 'FontSize' FontSize 'NumTicks' NumTicks 'TickMag' TickMag 'mActCat' mActCat ...
+        vararg_curr = {'hWind' hWindReturn 'Tolerance' Tolerance 'AllowableDeviation' AllowableDeviation 'NumSamples' NumSamples 'ObjSamplesPercent' ObjSamplesPercent  ...
+                'vFixed' vFixed 'Precision' Precision 'vFixedVals' vFixedVals 'vStep' vStep 'FontSize' FontSize 'NumTicks' NumTicks 'TickMag' TickMag 'mActCat' mActCat ...
                 'vGroup' vGroup 'mGroupData' mGroupData 'GroupToHighlight' iOpt 'mColors' mColors 'mHighlightColor' mHighlightColor ...
-                'AMat' AMat 'Brhs' Brhs 'cFunc' cFunc 'PlotPosition' PlotPosition 'PanelWidth' PanelWidth 'vObjLabels' vObjLabels ...
+                'ProbForm' ProbForm 'cFunc' cFunc 'PlotPosition' PlotPosition 'PanelWidth' PanelWidth 'vObjLabels' vObjLabels ...
                 'vXLabels' vXLabels 'vXLabelsShort' vXLabelsShort 'yAxisLabels' yAxisLabels 'AxisScales' AxisScales 'BaseAxis' BaseAxis 'mLims' mLims ...
                 'TickSize' TickSize 'sGamsFile' sGamsFile 'StartTab' StartTab, 'GenerateType' GenType 'GenerateMethod' GenMethod ...
                 'HideSliders' HideSliders 'HideCheckboxes' HideCheckboxes 'NearOptConstraint' NearOptConstraint 'OptSolRow' OptSolRow ...
@@ -2195,19 +2264,24 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     GenerateMethodLabel = uicontrol('Parent',GenSols,'Style', 'text','String','Engine:','HorizontalAlignment','left','Position', [10 lTopGen-30 45 20],'fontsize', fontsizecntls-2,'BackgroundColor','white');   
        
-    sUsingTip = sprintf('Data - Query data already on the plot\nMatlab - Run Matlab linprog function using constraint system defined by\n          the parameters AMat, Brhs, and (possibly) cFunc\nGAMS - Run the specified GAMS file'); 
+    sUsingTip = sprintf('Data - Query data already on the plot\nMatlab - Run Matlab linprog function using constraint system defined by\n          the ProbForm structure and (possibly) cFunc\nGAMS - Run the specified GAMS file'); 
     cbGenerateMethod = uicontrol('Parent',GenSols,'Style','popup','ToolTipString',sUsingTip,'String','Data|MATLAB (LP matrix)|GAMS','Position',[59 lTopGen-30 125 25],'fontsize',fontsizecntls-2,'Value',GenMethod,'Callback',{@SetFromGenBoxes});
  
     
     lblNumSamples = uicontrol('Parent',GenSols,'Style', 'text','String','# Samples:', 'Position', [10 lTopGen-55 75 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
-    txtNumSamples = uicontrol('Parent',GenSols,'Style', 'edit', 'Position', [90 lTopGen-55 45 20],'fontsize', fontsizecntls-2);
+    txtNumSamples = uicontrol('Parent',GenSols,'Style', 'edit', 'Position', [80 lTopGen-55 45 20],'fontsize', fontsizecntls-2);
+    lblObjSamples = uicontrol('Parent',GenSols,'Style', 'text','String','Obj. Samples (%):', 'Position', [130 lTopGen-55 120 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
+    sObjSamples = 'Percent of samples to stratify along objective function axes';
+    txtObjSamples = uicontrol('Parent',GenSols,'Style', 'edit', 'Position', [240 lTopGen-55 30 20],'ToolTipString',sObjSamples,'fontsize', fontsizecntls-2);
+
     set(txtNumSamples,'String',num2str(NumSamples));
+    set(txtObjSamples,'String',num2str(ObjSamplesPercent));
     %ResampleButton = uicontrol('Parent',hTabs(2),'Style', 'pushbutton', 'String', 'Resample',...
     %        'Position', [140 lTopSlider-30 90 20],'fontsize', fontsizecntls,'visible','off');
  
     lblGamsFile = uicontrol('Parent',GenSols,'Style', 'text','String','GAMS File:', 'Position', [10 lTopGen-80 75 15],'HorizontalAlignment','Left','fontsize', fontsizecntls-2,'BackgroundColor','white');
     sGamsFileTip = 'Full path and file name to GAMS file';
-    txtGamsFile = uicontrol('Parent',GenSols,'Style', 'edit', 'ToolTipString',sGamsFileTip,'Position', [90 lTopGen-80 170 20],'fontsize', fontsizecntls-2);
+    txtGamsFile = uicontrol('Parent',GenSols,'Style', 'edit', 'ToolTipString',sGamsFileTip,'Position', [80 lTopGen-80 170 20],'fontsize', fontsizecntls-2);
     set(txtGamsFile,'String',sGamsFile);
     %RunGamsButton = uicontrol('Parent',hTabs(2),'Style', 'pushbutton', 'String', 'Run GAMS',...
     %        'Position', [180 lTopSlider-60 90 20],'fontsize', fontsizecntls,'visible','off');
@@ -2468,6 +2542,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %callback functions. Organize by single-value text Box inputs, Axis
     %inputs, Group inputs, and other UI settings.
     control_handles = {'Tolerance' NearOptTolerance 'AllowableDeviation' txtAllowableDeviation 'NumSamples' txtNumSamples ...
+                        'ObjSamples' txtObjSamples ...
                         'Tabs' hTabs 'AxisChecked' cbChecks 'Sliders' sSlider 'txtSliderValue' txtSliderValue ...
                         'GroupChecks' cbGroupChecks 'GroupOrders' txtGroupOrders 'GroupNames' txtGroupNames 'GroupThicks' txtGroupThicks  ...
                         'HideSliders' uimHideSliders 'HideCheckboxes' uimHideChecks 'ByCat' cbByCat 'Reorder' cbReorder 'PruneChecked' cbPruneChecked ...
@@ -2775,7 +2850,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         %Error check validity of limit settings. If not valid, default to a
         %LimitSource setting of 1 (from Data records)     
         if (LimitSource==2) && (isempty(AMat) || isempty(Brhs) || isempty(OptSolRow) || isempty(NearOptConstraint))
-            warning('Linear system not defined (AMat and/or Brhs). Continuing with plot data');
+            warning('Linear system not defined (ProbForm). Continuing with plot data');
             set(cbGenerateMethod,'Value',1);
             LimitSource = 1;
         end
@@ -2800,10 +2875,10 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             mResultsPlot = mResultsData;
         elseif (lHideSliderValue==0) && (LimitSource==2)       
             %Sliders visible, query min and max values using linear constraints defined in
-            %AMat and brhs. Use maximum extent functions
-            [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue,Aeq,Beq] = UpdateLPMatrix(hWindReturn,nO,1);
+            %ProbForm (problem formulation). Use maximum extent functions
+            [ProbNew,ProbOld,AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindReturn,nO,1);
             
-            [mResultsValUse,mResCompact] = maxextentind(AMatNew,BrhsNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1,'Algorithm','simplex')); %'Aeq',Aeq,'Beq',Beq,
+            [mResultsValUse,mResCompact] = maxextentind(ProbNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1)); %'Aeq',Aeq,'Beq',Beq,
             
             if any(isnan(mResultsValUse))
                 warning('Can not calculate maximum extents for current settings. Stopping');
@@ -2821,7 +2896,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
                        
             if (nO>0) && (~isempty(cFunc))
                 %Find the range of objective function values
-                [mResultsValObjs,mResCompObjs] = maxextentind(AMatNew,BrhsNew,struct('objfunc',cFuncFree','Aeq',Aeq,'Beq',Beq,'Algorithm','simplex'));
+                [mResultsValObjs,mResCompObjs] = maxextentind(ProbNew,struct('objfunc',cFuncFree')); %Algorithm simplex
                 if nDF < nD
                     [mResultsValObjs] = CompactToFull(mResultsValObjs,vFixed(nO+1:end),vFixedVals(nO+1:end)');
                 end
@@ -4473,7 +4548,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     
     nO = size(mObjs,2);
     
-    [txtTolerances, txtNumSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,txtGroupThicks,cbGroupChecks,txtGamsFile,cTabs,txtCurrRec,cbGenType,cbGenMethod,cbGroupToHighlight,txtFontSize] = aGetField(hControls,{'Tolerance','NumSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupThicks','GroupChecks','GamsFile','Tabs','CurrentRecord','cbGenType','cbGenMethod','HighlightGroup','txtFontSize'});
+    [txtTolerances, txtNumSamples, txtObjSamples, cbChecks, txtAllowableDeviation, sSliders, txtGroupOrders,txtGroupNames,txtGroupThicks,cbGroupChecks,txtGamsFile,cTabs,txtCurrRec,cbGenType,cbGenMethod,cbGroupToHighlight,txtFontSize] = aGetField(hControls,{'Tolerance','NumSamples','ObjSamples','AxisChecked','AllowableDeviation','Sliders','GroupOrders','GroupNames','GroupThicks','GroupChecks','GamsFile','Tabs','CurrentRecord','cbGenType','cbGenMethod','HighlightGroup','txtFontSize'});
     [uimHideSliders,uimHideChecks, uimHideControls, uimShowCurrRecord, uimShowFiltered, uimShowObjsDiffColor, uimGroupLabels, uimShowInset, uimShowLegendOptions] = aGetField(hControls,{'HideSliders','HideCheckboxes','HideControls','ShowCurrRecord' 'ShowFilteredAlts' 'ShowObjsDiffColor' 'ShowGroupLabels' 'ShowInsetPlot' 'LegendOptions'});
     
     %Update the plot
@@ -4504,6 +4579,11 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     end
     
     NumSamples = GetCheckAllowableDeviation(txtNumSamples,CallFunction);
+    ObjSamplesPercent = GetCheckAllowableDeviation(txtObjSamples,CallFunction);
+    if ObjSamplesPercent > 100
+        ObjSamplesPercent = 100;
+    end
+    
     NewFontSize = str2num(get(txtFontSize,'String'));
     if isempty(NewFontSize)
         NewFontSize = aGetField(varargin,{'FontSize'});
@@ -4552,7 +4632,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     
     %Update the values in the field list
     outargs = aSetField(varargin,'Tolerance',ToleranceValues,'AllowableDeviation',AllowableDeviationValue,'AllowableDeviationPU',AllowableDeviationValPU, ...
-            'NumSamples',NumSamples,'vFixed',vFixed,'vFixedVals',vFixedVals,'mGroupData',mGroupData,'sGamsFile',sGamsFile, ...
+            'NumSamples',NumSamples,'ObjSamplesPercent',ObjSamplesPercent,'vFixed',vFixed,'vFixedVals',vFixedVals,'mGroupData',mGroupData,'sGamsFile',sGamsFile, ...
             'mConvert',mConvert,'StartTab',StartTab,'CurrentRecord',lCurrRecord,'GenerateType',GenType,'GenerateMethod',GenMethod, ...
             'HideSliders',HideSliders,'HideCheckboxes',HideCheckboxes,'GroupToHighlight',GroupToHighlight,'ShowControls',ShowControls,'FontSize',NewFontSize, ...
             'nO',nO,'ShowCurrRecord',ShowCurrRecord, 'ShowFilteredAlts',ShowFilteredAlts, 'ShowObjsDiffColor',ShowObjsDiffColor, ...
@@ -4978,7 +5058,7 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     % data passed along via hWindCurr to facillitate replotting the chart
     
     % Step 1. Figure out new order of columns (from Direction, FarDir, cbChecked, cbZeros)
-    % Step 2. Reorder all the columnar data (mMatrix, vFixedVals, vStep, vXLabels, vXLabelsShort, mActCat, vObjLabels, mLims, AMat, Brhs, cFunc
+    % Step 2. Reorder all the columnar data (mMatrix, vFixedVals, vStep, vXLabels, vXLabelsShort, mActCat, vObjLabels, mLims, ProbForm, cFunc
     % Step 3. Call the plot function with the reordered columnar data
     
     [m,n] = size(mMatrix);
@@ -5120,7 +5200,7 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     %vKeepDec;
     
     %Read in the varargin parameters that will be maniputed
-    [vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims AMat Brhs cFunc BaseAxis Tolerance AllowableDeviation OptSolRow NearOptConstraint blShowInset] = aGetField(varargin_rrax,{'vFixedVals' 'vStep','vXLabels','vXLabelsShort','mActCat','vObjLabels','mLims','AMat','Brhs','cFunc','BaseAxis','Tolerance','AllowableDeviation','OptSolRow' 'NearOptConstraint' 'ShowInsetPlot'});
+    [vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims ProbForm cFunc BaseAxis Tolerance AllowableDeviation OptSolRow NearOptConstraint blShowInset] = aGetField(varargin_rrax,{'vFixedVals' 'vStep','vXLabels','vXLabelsShort','mActCat','vObjLabels','mLims', 'ProbForm','cFunc','BaseAxis','Tolerance','AllowableDeviation','OptSolRow' 'NearOptConstraint' 'ShowInsetPlot'});
     
     %[vFixedVal vSliderSteps vFixedValPU] = ReadSliderValues(sSliders,vFixedVal,mConvert); 
     %AllowableDeviation = GetCheckAllowableDeviation(txtAllowableDeviation,'Prune');
@@ -5148,6 +5228,38 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
 
     mActCatN = mActCatN';
     
+    if ~isempty(ProbForm)
+       [AineqN, AeqN, lbN, ubN] = ReorderCols(vKeepDec,ProbForm.Aineq,ProbForm.Aeq,ProbForm.lb',ProbForm.ub');
+        
+       if lNewDec ~= nD
+            %Update the right hand side of the inequality and equity
+            %constraints
+            bineqN = ProbForm.bineq - ProbForm.Aineq*(vPrune(nObjs+1:n).*vFixedVal(nObjs+1:n)')';
+            beqN = ProbForm.beq -  ProbForm.Aeq*(vPrune(nObjs+1:n).*vFixedVal(nObjs+1:n)')';
+        else
+           bineqN = ProbForm.bineq;
+           beqN = ProbForm.beq;
+       end
+
+       
+       %Remove rows in the constraints that correspond to near-optimal
+       %constraints of removed objectives
+        if lNewObjs ~= nObjs
+            lCons = [1:size(AineqN,1)];
+            lRowsToKeep = ~ismember(lCons,NearOptConstraint(vPrune(1:nObjs)==1));
+            AineqN = AineqN(lRowsToKeep,:);
+            bineqN = bineqN(lRowsToKeep);
+        end
+       
+        ProbFormNew = ProbForm;
+        ProbFormNew.Aineq = AineqN;
+        ProbFormNew.Aeq = AeqN;
+        ProbFormNew.lb = lbN';
+        ProbFormNew.ub = ubN';
+        ProbFormNew.bineq = bineqN;
+        ProbFormNew.beq = beqN;
+    end
+ if 0 
     if ~isempty(AMat)
         AMatN = ReorderCols(vKeepDec,AMat);
         
@@ -5174,6 +5286,7 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
         AMatN=AMat;
         BrhsN = Brhs;
     end
+end
     if ~isempty(cFunc)
         cFuncTemp = ReorderCols(vKeepDec,cFunc);
         %now work on the rows (object functions
@@ -5211,7 +5324,7 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     %Set parameters that were manipulated to pass via varargin
     varargout = aSetField(varargin_rrax,'tolerance',ToleranceN,'vFixed',vFixedN','vFixedVals',vFixedValN','vStep',vStepN,'vObjLabels',vObjLabelsN','vXLabels',vXLabelsN, ...
                 'vXLabelsShort',vXLabelsShortN,'mActCat',mActCatN,'AllowableDeviation',AllowableDeviation,'BaseAxis',BaseAxisN,'mLims',mLimsN,...
-                'AMat',AMatN,'Brhs',BrhsN,'cFunc',cFuncN,'OptSolRow',OptSolRowN,'NearOptConstraint',NearOptConstraintN,'ShowInsetPlot',blShowInset);
+                'ProbForm',ProbFormNew,'cFunc',cFuncN,'OptSolRow',OptSolRowN,'NearOptConstraint',NearOptConstraintN,'ShowInsetPlot',blShowInset);
     
     nearoptplotmo2(mObjs, mDecs,varargout{:});
 end
@@ -5401,16 +5514,17 @@ function [vGroupSubSet] = ReturnRows(vGroup,vGroupSelect,AllowableDeviationValPU
     end 
 end
 
-function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue,AMatEq,BEq] = UpdateLPMatrix(hWindCurr,nO,lRetType)       
+function [ProbFormNew,ProbFormExist,AMatNew, BrhsNew, cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO,lRetType)       
     % Use the checked axes, slider set values, and Subspace Error control setting to define a new linear system of equations representing the feasible area 
-    % that is defined by the original linear program components (AMat, Brhs, cFunc) and the current fixed value settings.
+    % that is defined by the original linear program components (ProbForm, cFunc) and the current fixed value settings.
     % If an optimal solution and near-optimal tolerance constraint are specified (OptSolRow and NearOptConstraint), 
     % also updates the near-optimal tolerance constraint based on the value in the near-optimal tolerance control and optimal objective function value 
-    % lRetType == 1 will return fixed values as Equity constraints AMatEq
-    % and BEq, otherwise those will be left empty
+    % lRetType == 1 will return fixed values as Equity constraints (.Aeq
+    % and .beq) in the NewProbForm, otherwise those fields will be left at
+    % the original settings
     %
     %
-    % This new system of equations is returned as AMatNew, BrhsNew, and
+    % This new system of equations is returned as NewProbForm and
     % cFuncNew
     %
     % They are built as follows:
@@ -5428,7 +5542,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
     %  If the 1st and last decision axes are fixed at FixedValue1 and
     %  FixedValueN, and Objective 1 is fixed at ObjVal1, then the augmented matrix
     %  describing the original and fixed is:
-    %           [AMat      : Brhs                 ]
+    %           [.Aineq    : .bineq               ]
     %           [1  0 .. 0 : FixedValue1 + Error  ]
     %           [-1 0 .. 0 : -FixedValue1 + Error ]
     %           [0  0 .. 1 : FixedValueN + Error  ]
@@ -5437,9 +5551,9 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
     %           [-cFunc    : -ObjVal1 + Error     ]
     %
     % Note, when Error is zero, the matrix and constraint set is instead
-    % reduced and only columns in AMat corresponding to unchecked axes are
+    % reduced and only columns in .Aineq, .Aeq, .lb, and .ub corresponding to unchecked axes are
     % retained.
-    %   i.e. [ AMat(:,checked==0) : Brhs(:) - AMat(:,checked==1)*FixedValue(:)]  
+    %   i.e. [ .Aineq(:,checked==0) : .bineq(:) - .Aineq(:,checked==1)*FixedValue(:)]  
     %    
     % INPUTS
     %  hWindCurr = handle to figure object to pull out stored variables
@@ -5453,7 +5567,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
     %       AllowableDeviationValue=0 (otherwise, empty) [default value: 0]
     %
     % OUTPUTS
-    %  AMatNew = updated a-matrix defining the constraint coefficients
+    %  NewProbForm = updated a-matrix defining the constraint coefficients
     %   (m+2*d x nF) where m=original number of rows/constraints,
     %   d=number of fixed deicision variables + fixed objective function
     %   values, and nF = number of decision variables
@@ -5462,7 +5576,7 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
     %  cFuncNew = nO x nF maxtrix of objective function coefficients for
     %       the nO objectives
     %  cFuncFree = version of cFunc with columns removed for decision
-    %       variable values that fixed (vFixed == 1 and Error=0) when error
+    %       variable values that are fixed (vFixed == 1 and Error=0) when error
     %       value is 0 (reduced mode). Otherwise, this will be the same as
     %       cFuncNew
     %  vFixed = 1 x n vector of binaries with a value of 1 indicating the axis is fixed
@@ -5474,9 +5588,11 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
 
     % Get the handles for the figure controls we will need
     [varargin_fresh,hControls,mObjsCurr] = ReadControls('UpdateLPMatrix',hWindCurr);
-    [vFixed, vFixedVals, TickSize, AMat, Brhs, cFunc, AllowableDeviationValue, AllowableDeviationValPU, mConvert] = aGetField(varargin_fresh,{'vFixed' 'vFixedVals' 'TickSize' 'AMat' 'Brhs' 'cFunc' 'AllowableDeviation' 'AllowableDeviationPU' 'mConvert'});   
+    [vFixed, vFixedVals, TickSize, ProbFormExist, cFunc, AllowableDeviationValue, AllowableDeviationValPU, mConvert] = aGetField(varargin_fresh,{'vFixed' 'vFixedVals' 'TickSize' 'ProbForm' 'cFunc' 'AllowableDeviation' 'AllowableDeviationPU' 'mConvert'});   
     [NETolerance, NearOptConstraint,OptSolRow] = aGetField(varargin_fresh,{'Tolerance','NearOptConstraint','OptSolRow'});
 
+    [AMat, Brhs] = OptimiFull(ProbFormExist);
+    
     [mF nF] = size(vFixed);
     n = nF;
     %Calc number of decision variables
@@ -5488,17 +5604,21 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
     %objective function values
     if isempty(AMat) || isempty(Brhs) || isempty(NearOptConstraint) || isempty(OptSolRow)
         drawnow;
-        msgbox('Need additional input data to generate new alternatives with Matlab. Specify AMat and Brhs (to define the constraints (AMat)(x)<=Brhs), NearOptConstraint (row in AMat that is the near-optimal constraint), and OptSolRow (row in original mDecisions that is the optimal solution) on opening the plotter. Instead, set Generate engine to Data or GAMS.','Error');
+        msgbox('Need additional input data to generate new alternatives with Matlab. Specify ProbForm (to define inequity, equity, lower-bound, and/or upper-bound constraints), NearOptConstraint (row in inequity constraints that is the near-optimal constraint), and OptSolRow (row in original mDecisions that is the optimal solution) on opening the plotter. Instead, set Generate engine to Data or GAMS.','Error');
         AMatNew = [];
+        ProbFormNew = [];
         return
     end
 
-    AMatNew = AMat;
-    BrhsNew = Brhs;
+    AMatNew = ProbFormExist.Aineq;
+    BrhsNew = ProbFormExist.bineq;
     cFuncNew = cFunc;
     cFuncFree = cFunc;
-    AMatEq = [];
-    BEq = [];
+    
+    AMatEq = ProbFormExist.Aeq;
+    BEq = ProbFormExist.beq;
+    lB = ProbFormExist.lb;
+    uB = ProbFormExist.ub;
     
     %Determine lMatRet
     if nargin < 3
@@ -5509,13 +5629,14 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
     if (nO > 0) && ~isempty(NearOptConstraint) && ~isempty(OptSolRow)
         %Error checking on Near-optimal tolerance
         Tolerance = abs(NETolerance); %Screen out negative values
-        if Tolerance < 1
-            %We have a maximization function; add a negative sign to
-            %preserve the integrety of the <= constraint!
-            Tolerance = -Tolerance;
-        end
-        %Loop through objectives
         for i=1:nO
+            %Loop through objectives
+            if Tolerance(i) < 1
+                %We have a maximization function; add a negative sign to
+                %preserve the integrety of the <= constraint!
+                Tolerance(i) = -Tolerance(i);
+            end
+        
             BrhsNew(NearOptConstraint(i)) = Tolerance(i)*mObjsCurr(OptSolRow(i),i);
         end
     end   
@@ -5537,8 +5658,14 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
            %Reduce matrix -- we need to remove the variable from the constraint set and use a
             %modified (reduced) matrix set
            vFixedValsDs = vFixedVals(nO+1:end);
-           BrhsNew = BrhsNew - AMat(:,vFixed(nO+1:end)==1)*vFixedValsDs(vFixed(nO+1:end)==1);
-           AMatNew = AMat(:,vFixed(nO+1:end)==0);
+           BrhsNew = BrhsNew - AMatNew(:,vFixed(nO+1:end)==1)*vFixedValsDs(vFixed(nO+1:end)==1);
+           AMatNew = AMatNew(:,vFixed(nO+1:end)==0);
+           if ~isempty(lB)
+               lB = lB(vFixed(nO+1:end)==0);
+           end
+           if ~isempty(uB)
+               uB = uB(vFixed(nO+1:end)==0);
+           end           
            if ~isempty(cFunc)
                cFuncFree = cFunc(vFixed(1:nO)==0,vFixed(nO+1:end)==0);
            end
@@ -5565,16 +5692,15 @@ function [AMatNew,BrhsNew,cFuncNew,cFuncFree,vFixed,vFixedVals,AllowableDeviatio
             BrhsNew = [BrhsNew; vFixedVals(i) + ErrorValDU; - vFixedVals(i) + ErrorValDU];     
         end
     end
-        
-    %Output the matricies to check
-    %size(cFunc);
-    %size(cFuncFree);
-    %cFuncFree;
-    %size([AMat Brhs])
-    %size([AMatNew BrhsNew])
-
-    %BrhsNew(size(AMat,1)+1:end);
-    %AMatNew(size(AMat,1)+1:end,:);
+    
+   %Move results back into the new ProbForm structure
+   ProbFormNew = ProbFormExist;
+   ProbFormNew.Aineq = AMatNew;
+   ProbFormNew.bineq = BrhsNew;
+   ProbFormNew.Aeq = AMatEq;
+   ProbFormNew.beq = BEq;
+   ProbFormNew.lb = lB;
+   ProbFormNew.ub = uB;    
 end
 
 function [mResCompact,mResultsData,cRowsRet] = ReturnDataExtents(hCurr,mData,nO,blStrictExtent)
@@ -5696,24 +5822,32 @@ function [mObjsNew, mDecsNew] = Resample(hWind,event,hWindCurr,mData,nO)
     %Reading in the controls and input data
     [varargin_fresh,hControls] = ReadControls('Resample',hWindCurr);
     %Update the constraint matrix
-    [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
+    [ProbNew,ProbOrig,AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
 
     if isempty(AMatNew)
         %There was an error
         return
     end
     
-    [ToleranceValue, sGamsFile, NumSamples, vGroup, mActCat, mGroupDataSort, AMat, Brhs, AllowableDeviationValPU] = aGetField(varargin_fresh,{'Tolerance' 'sGamsFile' 'NumSamples' 'vGroup' 'mActCat' 'mGroupData' 'AMat' 'Brhs' 'AllowableDeviationPU'});
+    [ToleranceValue, sGamsFile, NumSamples, ObjSamplesPercent, vGroup, mActCat, mGroupDataSort,AllowableDeviationValPU] = aGetField(varargin_fresh,{'Tolerance' 'sGamsFile' 'NumSamples' 'ObjSamplesPercent' 'vGroup' 'mActCat' 'mGroupData' 'AllowableDeviationPU'});
     
     [m n] = size(mData);
     nD = n-nO;
+    
+    %Split the samples among objective (specified percentage) and decision
+    %variable axes
+    
+    ObjDecSplit = NumSamples*[100-ObjSamplesPercent ObjSamplesPercent]/100; 
             
     %Check extents of matrixes
-    [mExtOrig, mExtCompactOrig] = maxextentind(AMat,Brhs);
-    [mExtNew,mExtCompactNew] = maxextentind(AMatNew,BrhsNew);
+    [mExtOrig, mExtCompactOrig] = maxextentind(ProbOrig);
+    [mExtNew,mExtCompactNew] = maxextentind(ProbNew);
       
     %Resample
-    [NewSols,vValid] = stratgibbs(NumSamples,AMatNew,BrhsNew,struct('matformat','reduce','lincombo',cFuncFree'));
+    [NewSols,vValid] = stratgibbs(ObjDecSplit,ProbNew,struct('matformat','reduce','lincombo',cFuncFree','MCMCMethod','cprnd-gibbs'));
+    %[NewSols] = cprnd(NumSamples,AMatNew,BrhsNew,struct('method','hitandrun'));
+    %vValid = ones(NumSamples,1);
+
     %Only use the valid ones, screen out rows
     NewSols = NewSols(vValid==1,:);
     mDecsNew = NewSols;
@@ -5870,7 +6004,7 @@ function GenerateNewAlts(hWind,event,hWindCurr)
         
         %First update the definition of the contraints based on the control
         %settings (checkboxes, fixed values, etc.
-        [AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
+        [ProbNew,ProbOrig,AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindCurr,nO);
         
         if isempty(AMatNew)
             %There was an error
@@ -5879,11 +6013,14 @@ function GenerateNewAlts(hWind,event,hWindCurr)
        
         if lGenType==1
             %Single solution, optimize
-            [mDecNew, mObjNew, exitflag, minoutput] = linprog(cFunc,AMatNew,BrhsNew,[],[],[],[],[],struct('maxiter',1000,'Display', 'off'));
+            %[mDecNew, mObjNew, exitflag, minoutput] = linprog(cFunc,AMatNew,BrhsNew,[],[],[],[],[],struct('maxiter',1000,'Display', 'off'));
+            ProbLPNew = ProbNew;
+            ProbLPNew.f = cFunc;
+            [mDecNew, mObjNew, exitflag, minoutput] = linprog(ProbLPNew);
             
         elseif lGenType==2
             %Maximum extents   
-            [mDecNew,mResCompact] = maxextentind(AMatNew,BrhsNew);
+            [mDecNew,mResCompact] = maxextentind(ProbNew);
             
             %Calculate objective function values for new solutions
             [mObjNew] = mDecNew*cFunc';
@@ -5971,9 +6108,14 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     %   (default is empty)
     
     [VarsRet, hCont, mObjsOrig, mDecsOrig] = ReadControls('AddObjectives',hCurr);
-    [AMatOrig,BrhsOrig,cFuncOrig,NearOptConstraintOrig,OptSolRowOrig,vObjLabelsOrig, vToleranceOrig, sAxisScales, mLimsOrig, nOOrig, vGroups, blShowInset] = aGetField(VarsRet, {'AMat' 'Brhs' 'cFunc'  'NearOptConstraint' 'OptSolRow' 'vObjLabels' 'tolerance', 'AxisScales' 'mLims' 'nO' 'vGroup' 'ShowInsetPlot'});
+    [ProbForm,cFuncOrig,NearOptConstraintOrig,OptSolRowOrig,vObjLabelsOrig, vToleranceOrig, sAxisScales, mLimsOrig, nOOrig, vGroups, blShowInset] = aGetField(VarsRet, {'ProbForm' 'cFunc'  'NearOptConstraint' 'OptSolRow' 'vObjLabels' 'tolerance', 'AxisScales' 'mLims' 'nO' 'vGroup' 'ShowInsetPlot'});
     
-    [lCon,nD] = size(AMatOrig);
+    %[lCon,nD] = size(AMatOrig);
+    if isempty(ProbForm)
+        warning('Need problem data for exsiting problem (ProbForm specifying constraints) to add objectives')
+    else
+        [lCon,nD] = size(ProbForm.Aineq);
+    end
     
     %Step 1. Solicit the user for updated model information
     lNumFields = 6;
@@ -6061,6 +6203,9 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     dirs = zeros(1,nNewO);
     vOptSols = [];
     
+    ProbForm.solver = 'linprog';
+    ProbForm.options = struct('Algorithm','interior-point','maxiter',15000,'Display','off');
+    
     for i=1:nNewO
         dirs(i) = 2*strcmpi(cAnswers{5,i},'min')-1; % Map boolean (1 0) to (1 -1)
         
@@ -6069,7 +6214,10 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
             cAnswers{6,i} = 1/cAnswers{6,i};
         end
         
-        [a,b,c,d] = linprog(dirs(i)*cAnswers{2}(i,:),AMatOrig,BrhsOrig);
+        ProbFormSingle = ProbForm;
+        ProbFormSingle.f = dirs(i)*cAnswers{2}(i,:);
+        [a,b,c,d] = linprog(ProbFormSingle);
+        %[a,b,c,d] = linprog(dirs(i)*cAnswers{2}(i,:),AMatOrig,BrhsOrig);
         vOptSols = [vOptSols; a'];
     end
     
@@ -6089,9 +6237,13 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     vOptObjVals = mNewObjCoef*vOptSols';
 
     cFuncNew = [cFuncOrig; mNewObjCoef];
-    AMatNew = [AMatOrig; mNewObjCoef.*repmat(dirs',1,nD)];
-    BrhsNew = [BrhsOrig; diag(vOptObjVals).*dirs'];
-    NearOptConstraintNew = [NearOptConstraintOrig length(BrhsOrig)+[1:nNewO]];
+    ProbFormNew = ProbForm;
+    ProbFormNew.Aineq = [ProbFormNew.Aineq; mNewObjCoef.*repmat(dirs',1,nD)];
+    ProbFormNew.bineq = [ProbFormNew.bineq; diag(vOptObjVals).*dirs'];
+    NearOptConstraintNew = [NearOptConstraintOrig length(ProbForm.bineq)+[1:nNewO]];
+    %AMatNew = [AMatOrig; mNewObjCoef.*repmat(dirs',1,nD)];
+    %BrhsNew = [BrhsOrig; diag(vOptObjVals).*dirs'];
+    %NearOptConstraintNew = [NearOptConstraintOrig length(BrhsOrig)+[1:nNewO]];
     OptSolRowNew = [OptSolRowOrig size(mObjsOrig,1)+[1:nNewO]];
     ToleranceNew = [vToleranceOrig cAnswers{6}];
     
@@ -6122,7 +6274,7 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     mDecsNew = [mDecsOrig; vOptSols];
     
     %Save the new parameters and dataset back to the Window so we can use them in resampling
-    VarsNew = aSetField(VarsRet,'AMat',AMatNew,'Brhs',BrhsNew,'cFunc',cFuncNew,'NearOptConstraint',NearOptConstraintNew,'OptSolRow',OptSolRowNew, ...
+    VarsNew = aSetField(VarsRet,'ProbForm',ProbFormNew,'cFunc',cFuncNew,'NearOptConstraint',NearOptConstraintNew,'OptSolRow',OptSolRowNew, ... %'AMat',AMatNew,'Brhs',BrhsNew
             'vObjLabels', vObjLabelsNew,'Tolerance',ToleranceNew,'mLims',mLimsNew,'nO',nOOrig+nNewO,'vGroup',vGroupNew,'mGroupData',mGroupDataNewSort(:,1:3), ...
             'vFixed', vParamsNew{1},'vFixedVals',vParamsNew{2}','vStep',vParamsNew{3});       
     setappdata(hCurr,'varargs',VarsNew);
@@ -6135,10 +6287,10 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
 end    
 
 function AddConstraints(hind,evnt,hCurr,dfAns)
-    % Solicits the user for new constraint(ss) in the form of A x <= b, updates the model
+    % Solicits the user for new constraint(ss) in the form of A x <=,==,>= b, updates the model
     % formulation, and resamples alternatives according to the updated
     % formulation. There must be an existing model formulation defined by
-    % AMat and Brhs.
+    % ProbForm.
     
     % INPUTS
     %   hCurr = handle to the current figure window
@@ -6146,9 +6298,12 @@ function AddConstraints(hind,evnt,hCurr,dfAns)
     %   (default is empty)
     
     [VarsRet, hCont] = ReadControls('AddConstraints',hCurr);
-    [AMatOrig,BrhsOrig] = aGetField(VarsRet, {'AMat' 'Brhs' });
+    [ProbForm] = aGetField(VarsRet, {'ProbForm'});
+    %[AMatOrig,BrhsOrig] = aGetField(VarsRet, {'AMat' 'Brhs' });
     
-    [lCon,nD] = size(AMatOrig);
+    [AMat,Brhs] = OptimiFull(ProbForm);
+    
+    [nD] = size(AMat,2);
     
     %Step 1. Solicit the user for updated model information
     lNumFields = 5;
@@ -6223,26 +6378,25 @@ function AddConstraints(hind,evnt,hCurr,dfAns)
     end      
         
     %Step 3. Update the model formulation
-    AMatNew = AMatOrig;
-    BrhsNew = BrhsOrig;
+    ProbFormNew = ProbForm;
    
     %Loop through each contrainst
     for l=1:cAnswers{1}
         if cAnswers{4}(l) == 0
-            % equity constraint, add both positive and negative
-            AMatNew = [AMatNew; cAnswers{2}(l,:); -cAnswers{2}(l,:)];
-            BrhsNew = [BrhsNew; cAnswers{3}(l); -cAnswers{3}(l);];
+            % equity constraint, update the equity constraint parameters
+            ProbFormNew.Aeq = [ProbFormNew.Aeq; cAnswers{2}(l,:)];
+            ProbFormNew.beq = [ProbFormNew.beq; cAnswers{3}(l)];            
         else
             %less than or equal to or greater than or equal to constraint
             %Direction indicated by Direction variable
-            AMatNew = [AMatNew; cAnswers{4}(l)*cAnswers{2}(l,:)];
-            BrhsNew = [BrhsNew; cAnswers{4}(l)*cAnswers{3}(l)];            
+            ProbFormNew.Aineq = [ProbFormNew.Aineq; cAnswers{4}(l)*cAnswers{2}(l,:)];
+            ProbFormNew.bineq = [ProbFormNew.bineq; cAnswers{4}(l)*cAnswers{3}(l)];     
         end
     end
       
     %Save the new parameters and dataset back to the Window so we can use them in resampling
-    VarsNew = aSetField(VarsRet,'AMat',AMatNew,'Brhs',BrhsNew);       
-    setappdata(hCurr,'varargs',VarsNew); 
+    VarsNew = aSetField(VarsRet,'ProbForm',ProbFormNew); %'AMat',AMatNew,'Brhs',BrhsNew);       
+    setappdata(hCurr,'varargs',VarsNew);
     
     %Step 4. Rsample and Replot
     GenerateNewAlts(0,0,hCurr);
@@ -6329,7 +6483,7 @@ function LoadData(hind,evnt,hCurr,dfAns)
     mSizes = zeros(lNumFields,2);
     for i=1:lNumFields
        try 
-          cAnswers{i} = eval(vAnswers{i}); 
+          cAnswers{i} = evalin('base',vAnswers{i}); 
        catch
           h = errordlg(['Error with input: ',vAnswers{i},'. Try again.'],'Input Error');
           uiwait(h);

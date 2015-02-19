@@ -93,7 +93,7 @@ function [X] = maxextentgibbs(p,A,b,options)
     end
     
     %determine the extent method to use
-    lower(options.extmethod);
+    %lower(options.extmethod);
     if (nargin == 4) && (isstruct(options)) && isfield(options,'extmethod') && strcmp(lower(options.extmethod),'linalg')
         extmethod = 'linalg';
     else
