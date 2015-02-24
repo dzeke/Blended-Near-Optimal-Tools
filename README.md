@@ -9,11 +9,14 @@ Below is listing of the repository contents by folder as well as additional info
 ==============================
 1) DOCUMMENTATION (Paper and Scripts)
 
-Includes the paper re-submitted to Water Resources Research in December 2014 (under review) that describes this work as well as peer-reviewer comments and author responses to first and  second drafts submitted in August, 2013 and September 2014. Also provides scripts and directions to generate each figure shown in the paper. These scripts make use of each of the tools described in sections 2) to 4). To generate each figure in the manuscript:
+Includes the paper re-submitted to Water Resources Research in February 2015 (under review) that describes this work as well as peer-reviewer comments and author responses to earlier drafts submitted in August, 2013, September 2014, and December 2014. Also provides scripts and directions to generate each figure shown in the paper. These scripts make use of each of the tools described in sections 2) to 4). To generate each figure in the manuscript:
 
     a. Download all the files in the folder 1-Documentation\ScriptsForPaper as well as the folders 2-GenerateAlternatives, 3-InteractiveParallelPlot, and 4-EchoReservoirApplication folders to a single folder on your local machine.
     b. In Matlab, add the target folder where you downloaded the files to your Matlab path
-    c. Set the Matlab directory to the same folder
+    c. Install the General Algebraic Modeling System (GAMS) version 24.3.3 or more recent
+       - Download from www.gams.com.
+       - In Matlab, add the directory where you installed GAMS to the Matlab Path. On the Ribbon, select Home tab=>Environment=>Set Path. In the Set Path window, click the Add with subfolders… button and navigate to the directory where you installed GAMS. 
+       - Set the Matlab directory to the same folder
     d. At the Matlab command prompt, enter:
 
 	       >> FigGenForNearOptPaper
@@ -22,6 +25,8 @@ Includes the paper re-submitted to Water Resources Research in December 2014 (un
     f. See the file Documentation-readme.txt for further instructions on how to interactively generate figures 4, 5, 6, and 7 from Figure 3.
 
 Also provides directions and an example to load your own model data into the near-optimal tools.
+
+See also the directions in the file Rosenberg-Workshop-NearOptimalManagement-Jan16.pdf for a workshop given at Tarbiat Modares University in Tehran, Iran in January 2015.
 
 ==============================
 2) GENERATE ALTERNATIVES
@@ -93,7 +98,7 @@ To use:
 ==================
 CITATION
 
-David E. Rosenberg (in review) "Near-optimal alternative generation, visualization, and interaction for water resources decision making". Water Resources Research. Submitted August 2014.
+David E. Rosenberg (in review) "Blended near-optimal alternative generation, visualization, and interaction for water resources decision making". Water Resources Research. Submitted August 2013.
 
 LICENSING
 
@@ -110,6 +115,4 @@ AUTHOR and CONTACT
     Department of Civil & Environmental Engineering and Utah Water Research Lab
     Utah State University
     Email: david.rosenberg@usu.edu
-
-
 
