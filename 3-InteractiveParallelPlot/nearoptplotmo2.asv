@@ -487,6 +487,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %      and improve documentation.
 %   - Updated Sept 2014 to add Update Formulation menu -- further improve the process to streamline adding
 %      additional objectives and constraints
+%   - Updated Feb 2015 to define model formulation with ModForm Matlab
+%      structure to allow ineqa
 %
 %   Citation:
 %   David E. Rosenberg (in review) "Near-optimal alternative generation,
@@ -5629,13 +5631,14 @@ function [ProbFormNew,ProbFormExist,AMatNew, BrhsNew, cFuncNew,cFuncFree,vFixed,
     if (nO > 0) && ~isempty(NearOptConstraint) && ~isempty(OptSolRow)
         %Error checking on Near-optimal tolerance
         Tolerance = abs(NETolerance); %Screen out negative values
-        if Tolerance < 1
-            %We have a maximization function; add a negative sign to
-            %preserve the integrety of the <= constraint!
-            Tolerance = -Tolerance;
-        end
-        %Loop through objectives
         for i=1:nO
+            %Loop through objectives
+            if Tolerance(i) < 1
+                %We have a maximization function; add a negative sign to
+                %preserve the integrety of the <= constraint!
+                Tolerance(i) = -Tolerance(i);
+            end
+        
             BrhsNew(NearOptConstraint(i)) = Tolerance(i)*mObjsCurr(OptSolRow(i),i);
         end
     end   
@@ -6213,8 +6216,9 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
             cAnswers{6,i} = 1/cAnswers{6,i};
         end
         
-        ProbForm.f = dirs(i)*cAnswers{2}(i,:);
-        [a,b,c,d] = linprog(ProbForm);
+        ProbFormSingle = ProbForm;
+        ProbFormSingle.f = dirs(i)*cAnswers{2}(i,:);
+        [a,b,c,d] = linprog(ProbFormSingle);
         %[a,b,c,d] = linprog(dirs(i)*cAnswers{2}(i,:),AMatOrig,BrhsOrig);
         vOptSols = [vOptSols; a'];
     end

@@ -2,19 +2,22 @@ Documentation-readme.txt
 
 The Documentation folder contains the script files and directions to generate each figure in the version of the paper re-submitted in February 2015. Additionally, the folder has PDF versions of the re-submitted and original manuscripts, reviewer comments, and response letter to reviewer comments.
 
-Rosenberg-NearOptimalWaterResourcesDecisionMaking-Dec2014.pdf : revised version of the manuscript re-submitted to Water Resources Research in Dec 2014 that addresses 2nd round of reviewer comments.
+Rosenberg-2015Feb-BlendedNearOptimalTools.pdf : revised version of the manuscript re-submitted to Water Resources Research in Feb 2015 that addresses a 3nd round of reviewer comments.
 
-Rosenberg-NearOptimalWaterResourcesDecisionMaking-Aug2014.pdf : revised version of the manuscript re-submitted to Water Resources Research in August 2014 that addresses 1st round of reviewer comments.
+Rosenberg-2014Dec-BlendedNearOptimalTools.pdf : revised version of the manuscript re-submitted to Water Resources Research in Dec 2014 that addresses 2nd round of reviewer comments.
 
-Rosenberg-NearOptimalWaterResourcesDecisionMaking-Aug2013.pdf : original version of the manuscript submitted in August 2013 to Water Resources Research.
+Rosenberg-2014Aug-BlendedNearOptimalTools.pdf : revised version of the manuscript re-submitted to Water Resources Research in August 2014 that addresses 1st round of reviewer comments.
 
-Rosenberg-ResponseLetter-NearOptimal2-Aug2014.pdf : Letter listing reviewer comments, author responses and descritions of changes made in the August, 2014 version of the paper to address the comments.
+Rosenberg-2013Aug-BlendedNearOptimalTools.pdf : original version of the manuscript submitted in August 2013 to Water Resources Research.
 
-Rosenberg-ResponseLetter-NearOptimal3-Dec2014.pdf : Letter listing reviewer comments, author responses and descritions of changes made in the Dec, 2014 version of the paper to address the comments.
+Rosenberg-2015Feb-ResponseLetter3-BlendedNearOptimalTools.pdf : Letter listing reviewer comments, author responses and descriptions of changes made in the Feb, 2015 version of the paper to address the comments.
+
+Rosenberg-2014Dec-ResponseLetter2-BlendedNearOptimalTools.pdf : Letter listing reviewer comments, author responses and descriptions of changes made in the Dec, 2014 version of the paper to address the comments.
+
+Rosenberg-2014Aug-ResponseLetter1-BlendedNearOptimalTools.pdf : Letter listing reviewer comments, author responses and descriptions of changes made in the August, 2014 version of the paper to address the comments.
+
 
 LoadYourOwnModel.m : Directions and example for how to load your own model data into the near-optimal tools. Specific directions for linear programs, more general directions for mixed-integer and non-linear programs.
-
-Rosenberg-Workshop-NearOptimalManagement-Jan16.pdf : step-by-step instructions for a near-optimal water management workshop given at Tarbiat Modares University in Tehran, Iran in January 2015.
 
 
 Within the ScriptsForPaper folder:

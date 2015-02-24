@@ -191,23 +191,22 @@ set(gcf,'NumberTitle','off','Name','Near-Optimal Figure 5. Comparisons for multi
 %        - From the Plot Data menu, select Save data to save the model data
 %           back to the Base Workspace.
 %        - At the Matlab command prompt, retrieve the model constraints, objective function, and near-optimal data from
-%           parameters #36, 38, and 40 in no_vargs. i.e.,
+%           parameters #38, 40, etc. in no_vargs. i.e.,
 %
-%            >> Amat = no_vargs{36};
-%            >> Brhs = no_vargs{38};
+%            >> ProbForm = no_vargs{38};
 %            >> cFunc = no_vargs{40};
 %            >> Tolerance = no_vargs{4};
 %            >> NearOptConstraint = no_vargs{74};
 %            >> OptSols = no_vargs{76};
 %
-%        - Update the right-hand side coefficients for the rows that
+%        - Update the right-hand side coefficients of the inequality constraints for the rows that
 %        represent near-optimal tolerance constraints:
 %
-%            >> Brhs(NearOptConstraint) = sign(Brhs(NearOptConstraint)).*Tolerance'.*diag(no_mObjs(OptSols,:))
+%            >> ProbForm.aineq(NearOptConstraint) = sign(ProbForm.aineq(NearOptConstraint)).*Tolerance'.*diag(no_mObjs(OptSols,:))
 %
 %             The sign preserves the direction of the optimization and the
-%             diag pulls out the diagnal value from the objective function
-%             value.
+%             diag pulls out the diagnal value from the matrix of objective function
+%             values.
 %
 %        - Use the Matlab linprog function to calculate pareto-optimal
 %           solutions such as by the constraint method or another pareto solution generation method.
@@ -332,7 +331,7 @@ if strcmpi(bReply,'Yes')
     %    No stratify sample, 25 alternatives specified for MGA-Serial, run time
     %    liisted in the table in the command window.
          [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,0,0,[2 0 25]);
-          set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 2: Run times for MGA-Serial increases...');
+          set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 2: Run time for MGA-Serial increases...');
     %
     % B) MGA-HSJ generated...
     %
@@ -349,14 +348,14 @@ if strcmpi(bReply,'Yes')
     %              save the data to the base workspace.
     %      b. To see the number of decision variables below the extents of
     %           stratified sampled near-optimal alternatives, enter the commend:
-    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+    %           >> sum(max(no_mDecs(strcmpi(no_vargs{28},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{28},'Near-optimal'),:))')
     %      c. To see which variables are below the extents identified by stratified sampling, enter the commands:
-    %           >> actFull = [ no_vargs{24} no_vargs{48}' ]
-    %           >> actFull(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+    %           >> actFull = [ no_vargs{26} no_vargs{48}' ]
+    %           >> actFull(max(no_mDecs(strcmpi(no_vargs{28},'MGA-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{28},'Near-optimal'),:))')
     %      d. To see similar results for GAMS model with land area and stream
     %         bank lenght decision variables, sbustitute 'MGA-GAMS-HSJ' for
     %         'MGA-HSJ', e.g.
-    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-GAMS-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')     
+    %           >> sum(max(no_mDecs(strcmpi(no_vargs{28},'MGA-GAMS-HSJ'),:))' < max(no_mDecs(strcmpi(no_vargs{28},'Near-optimal'),:))')     
 
     % C) Five MGA-Simultaneous trials each generated ten alternatives in 100 to 500 s that implemented 
     %    up to six phosphorus removal practices in each sub-watershed.
@@ -370,10 +369,16 @@ if strcmpi(bReply,'Yes')
     %    To look more closely at the values for non-zero decision variables:
     %      a. On the plot, select the menu Plot Data=>Save Data (Cntrl-D) to
     %              save the data to the base workspace.
-    %      b. To see the number of decision variables below the extents of
-    %           stratified sampled near-optimal alternatives, enter the commend:
-    %           >> sum(max(no_mDecs(strcmpi(no_vargs{26},'MGA-HSJ')+strcmpi(no_vargs{26},'MGA-Serial')+strcmpi(no_vargs{26},'MGA-Sequential')>0,:))' < max(no_mDecs(strcmpi(no_vargs{26},'Near-optimal'),:))')
+    %      b. To see the number of decision variables where the MGA methods
+    %      generate an extent BELOW the extents identified by the stratified sampled near-optimal
+    %      alternatives, enter the commend:
+    %           >> sum(max(no_mDecs(strcmpi(no_vargs{28},'MGA-HSJ')+strcmpi(no_vargs{28},'MGA-Serial')+strcmpi(no_vargs{28},'MGA-Sequential')>0,:))' < max(no_mDecs(strcmpi(no_vargs{28},'Near-optimal'),:))')
     %
+    %      c. Similarly, the number of decision variables where at least
+    %      one of the MGA methods identifies the same extents as identified
+    %      by the stratified sampling method, enter:
+    %           >> size(no_mDecs,2) - sum(max(no_mDecs(strcmpi(no_vargs{28},'MGA-HSJ')+strcmpi(no_vargs{28},'MGA-Serial')+strcmpi(no_vargs{28},'MGA-Sequential')>0,:))' < max(no_mDecs(strcmpi(no_vargs{28},'Near-optimal'),:))')
+    %   
     % E) Compare more closely HSJ formulations
           [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[1 0 50; 4 0 0; 5 0 0]);
           set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 5: All HSJ results');   
@@ -386,6 +391,20 @@ if strcmpi(bReply,'Yes')
           %
           % MGA-GAMS-HSJ and MGA-HSJ-Orig should be the same but differ
           % slightly because of the LP solvers used (multiple optimal on each HSJ solve)
-    
+ 
+    %
+    % F) Interactive steps to generate multiple global optima solutions
+    %   1. Generate Figure 3 minus the MGA solutions. At the commnad prompt paste:
+    %      >>  [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,0);
+    %      >>  set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 6: Global Optima solution');   
+
+    %   2. Once the figure finally loads, show the control panel. From the Controls menu=>uncheck Hide all
+    %       controls
+    %   3. On the Interact tab, set the Near Optimal Tolerance to 1.0
+    %   4. In the Generate New Alternatives box, click the Generate button. The
+    %       command window will update with info on the alternative generation. A new group of
+    %       lines will add to the plot (in purple).
+    %   5. On the Display tab, enter a new name for the group, e.g., 'Global optima'
+
     % 
 end

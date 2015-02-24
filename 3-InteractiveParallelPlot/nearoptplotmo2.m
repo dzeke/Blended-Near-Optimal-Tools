@@ -487,6 +487,9 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %      and improve documentation.
 %   - Updated Sept 2014 to add Update Formulation menu -- further improve the process to streamline adding
 %      additional objectives and constraints
+%   - Updated Feb 2015 to define model formulation with ModForm Matlab
+%      structure to allow inequality, equality, lower-bound, and
+%      upper-bound constraints
 %
 %   Citation:
 %   David E. Rosenberg (in review) "Near-optimal alternative generation,
@@ -2876,7 +2879,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         elseif (lHideSliderValue==0) && (LimitSource==2)       
             %Sliders visible, query min and max values using linear constraints defined in
             %ProbForm (problem formulation). Use maximum extent functions
-            [ProbNew,ProbOld,AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindReturn,nO,1);
+            [ProbNew,ProbOld,AMatNew,BrhsNew,cFunc,cFuncFree,vFixed,vFixedVals,AllowableDeviationValue] = UpdateLPMatrix(hWindReturn,nO,2);
             
             [mResultsValUse,mResCompact] = maxextentind(ProbNew,struct('vFixedVals',vFixedVals(nO+1:end)','vFixed',vFixed(nO+1:end),'UnfixCurrX',1)); %'Aeq',Aeq,'Beq',Beq,
             
@@ -5519,12 +5522,14 @@ function [ProbFormNew,ProbFormExist,AMatNew, BrhsNew, cFuncNew,cFuncFree,vFixed,
     % that is defined by the original linear program components (ProbForm, cFunc) and the current fixed value settings.
     % If an optimal solution and near-optimal tolerance constraint are specified (OptSolRow and NearOptConstraint), 
     % also updates the near-optimal tolerance constraint based on the value in the near-optimal tolerance control and optimal objective function value 
-    % lRetType == 1 will return fixed values as Equity constraints (.Aeq
-    % and .beq) in the NewProbForm, otherwise those fields will be left at
-    % the original settings
+    % 
+    % lRetType == A flag to indicate how to update:
+    %     0 - subtract fixed values from constraints (reduce matrix)
+    %     1 - return fixed values as equity constraints (.Aeq and .beq) in the NewProbForm
+    %     2 - Ignore fixed values and leave equity constraints at the original
+    %           settings
     %
-    %
-    % This new system of equations is returned as NewProbForm and
+    % The new system of equations is returned as NewProbForm and
     % cFuncNew
     %
     % They are built as follows:
@@ -5646,15 +5651,7 @@ function [ProbFormNew,ProbFormExist,AMatNew, BrhsNew, cFuncNew,cFuncFree,vFixed,
     
     if AllowableDeviationValPU==0
        % fixed values for decision variables
-       blIsReduced = 1;
-       if lRetType == 1
-          %Create equity constraints
-          BEq = vFixedVals(nO+dToAdd);
-          for i=1:length(dToAdd)
-              AMatEq = [AMatEq; circshift(eye(nD,1),dToAdd(i)-1)'];
-          end
-          
-       else
+       if lRetType == 0
            %Reduce matrix -- we need to remove the variable from the constraint set and use a
             %modified (reduced) matrix set
            vFixedValsDs = vFixedVals(nO+1:end);
@@ -5669,6 +5666,12 @@ function [ProbFormNew,ProbFormExist,AMatNew, BrhsNew, cFuncNew,cFuncFree,vFixed,
            if ~isempty(cFunc)
                cFuncFree = cFunc(vFixed(1:nO)==0,vFixed(nO+1:end)==0);
            end
+       elseif lRetType == 1
+          %Create equity constraints
+          BEq = vFixedVals(nO+dToAdd);
+          for i=1:length(dToAdd)
+              AMatEq = [AMatEq; circshift(eye(nD,1),dToAdd(i)-1)'];
+          end
        end
     else
         %Add constraints to allow decision variables within some
