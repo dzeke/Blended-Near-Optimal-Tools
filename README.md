@@ -15,7 +15,7 @@ Includes the paper re-submitted to Water Resources Research in February 2015 (un
     b. In Matlab, add the target folder where you downloaded the files to your Matlab path
     c. Install the General Algebraic Modeling System (GAMS) version 24.3.3 or more recent
        - Download from www.gams.com.
-       - In Matlab, add the directory where you installed GAMS to the Matlab Path. On the Ribbon, select Home tab=>Environment=>Set Path. In the Set Path window, click the Add with subfolders… button and navigate to the directory where you installed GAMS. 
+       - In Matlab, add the directory where you installed GAMS to the Matlab Path. On the Ribbon, select Home tab=>Environment=>Set Path. In the Set Path window, click the Add with subfoldersâ€¦ button and navigate to the directory where you installed GAMS. 
        - Set the Matlab directory to the same folder
     d. At the Matlab command prompt, enter:
 
@@ -98,7 +98,7 @@ To use:
 ==================
 CITATION
 
-David E. Rosenberg (in review) "Blended near-optimal alternative generation, visualization, and interaction for water resources decision making". Water Resources Research. Submitted August 2013.
+David E. Rosenberg (2015). "Blended near-optimal alternative generation, visualization, and interaction for water resources decision making". Water Resources Research. doi:10.1002/2013WR014667. http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full.
 
 LICENSING
 
