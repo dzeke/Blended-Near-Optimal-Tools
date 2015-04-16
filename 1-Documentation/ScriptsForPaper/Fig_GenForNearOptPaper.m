@@ -396,7 +396,7 @@ if strcmpi(bReply,'Yes')
     % F) Interactive steps to generate multiple global optima solutions
     %   1. Generate Figure 3 minus the MGA solutions. At the commnad prompt paste:
     %      >>  [mResult nObjs vParams] = LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,0);
-    %      >>  set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 6: Global Optima solution');   
+    %      >>  set(gcf,'NumberTitle','off','Name','Near-Optimal Extra 6: Global Optima solutions');   
 
     %   2. Once the figure finally loads, show the control panel. From the Controls menu=>uncheck Hide all
     %       controls
