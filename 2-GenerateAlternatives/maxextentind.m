@@ -97,8 +97,8 @@ function [X, vXs] = maxextentind(problemstruct,options)
     Aineq = problemstruct.Aineq;
     bineq = problemstruct.bineq;
 
-    n = size(Aineq,2);                         % dimension
-    m = size(Aineq,1);                         % num constraint ineqs
+    n = size(a_full,2);%n = size(Aineq,2);                         % dimension
+    m = size(a_full,1);%m = size(Aineq,1);                         % num constraint ineqs
     
     % Check input arguments
     
