@@ -94,6 +94,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %         ..., entering a AllowableDeviation of 0.1 will select all
 %         alternatives within +/- 500 of the set value.
 %
+%     ErorrResid = the residual allowed when determining whether a
+%           constraint is satisfied during Stratified Gibbs sampling.
+%           (Default value: 0)
+%
 %     GenerateType = index that takes the values 1 (single solution), 2 (maximum extents), 3 (random sample), or 4 (enumerate for MIPs) to indicate
 %           the type of new alternative(s) genreated when clicking the
 %           Generate button on the Interact tab. Setting also available for user input as a drop-down list on the Interact tab. (Default: 1 [single
@@ -530,7 +534,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %% Set default field values
     hWind = 0;
     Tolerance = ones(1,nO);
-    AllowableDeviation = 0;
+    AllowableDeviation = 0; ErrorResid = 0;
     NumSamples=0;
     ObjSamplesPercent = 15; %Percent of samples drawn from objective function axes/strata
     Precision=2;
@@ -635,6 +639,10 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'AllowableDeviation'))            
                 AllowableDeviation = varargin{count+1};
+                count=count+1;
+                
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'ErrorResid'))            
+                ErrorResid = varargin{count+1};
                 count=count+1;
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'NumSamples'))            
@@ -1282,8 +1290,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         mStepSeq = OSUColorRamps('SteppedSequential');
         %Transform 2D in into 3D
         mColorFull = zeros(nCats,nF,3);
-        cCats = [2 5 1]; %orange-purple-red family of stepped sequential
-        for i=1:length(cCats)
+        cCats = repmat([2 5 1 3 4],1,ceil(nCats/5)); %orange-purple-red-green-blue family of stepped sequential, wrap to repeat
+        for i=1:nCats
            if nF <=5
                 mColorFull(i,:,:) = mStepSeq(5*(cCats(i)-1)+[1:nF],:); 
            else
@@ -1932,7 +1940,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %Rebuild the variable argument list to pass along through the controls
     
 %    if strcmpi(AxisScales,'custom')
-        vararg_curr = {'hWind' hWindReturn 'Tolerance' Tolerance 'AllowableDeviation' AllowableDeviation 'NumSamples' NumSamples 'ObjSamplesPercent' ObjSamplesPercent  ...
+        vararg_curr = {'hWind' hWindReturn 'Tolerance' Tolerance 'AllowableDeviation' AllowableDeviation ...
+                'ErrorResid' ErrorResid 'NumSamples' NumSamples 'ObjSamplesPercent' ObjSamplesPercent  ...
                 'vFixed' vFixed 'Precision' Precision 'vFixedVals' vFixedVals 'vStep' vStep 'FontSize' FontSize 'NumTicks' NumTicks 'TickMag' TickMag 'mActCat' mActCat ...
                 'vGroup' vGroup 'mGroupData' mGroupData 'GroupToHighlight' iOpt 'mColors' mColors 'mHighlightColor' mHighlightColor ...
                 'ProbForm' ProbForm 'cFunc' cFunc 'PlotPosition' PlotPosition 'PanelWidth' PanelWidth 'vObjLabels' vObjLabels ...
@@ -5832,7 +5841,7 @@ function [mObjsNew, mDecsNew] = Resample(hWind,event,hWindCurr,mData,nO)
         return
     end
     
-    [ToleranceValue, sGamsFile, NumSamples, ObjSamplesPercent, vGroup, mActCat, mGroupDataSort,AllowableDeviationValPU] = aGetField(varargin_fresh,{'Tolerance' 'sGamsFile' 'NumSamples' 'ObjSamplesPercent' 'vGroup' 'mActCat' 'mGroupData' 'AllowableDeviationPU'});
+    [ToleranceValue, sGamsFile, NumSamples, ObjSamplesPercent, vGroup, mActCat, mGroupDataSort,AllowableDeviationValPU, ErrorResid] = aGetField(varargin_fresh,{'Tolerance' 'sGamsFile' 'NumSamples' 'ObjSamplesPercent' 'vGroup' 'mActCat' 'mGroupData' 'AllowableDeviationPU' 'ErrorResid'});
     
     [m n] = size(mData);
     nD = n-nO;
@@ -5847,7 +5856,7 @@ function [mObjsNew, mDecsNew] = Resample(hWind,event,hWindCurr,mData,nO)
     [mExtNew,mExtCompactNew] = maxextentind(ProbNew);
       
     %Resample
-    [NewSols,vValid] = stratgibbs(ObjDecSplit,ProbNew,struct('matformat','reduce','lincombo',cFuncFree','MCMCMethod','cprnd-gibbs'));
+    [NewSols,vValid] = stratgibbs(ObjDecSplit,ProbNew,struct('matformat','reduce','lincombo',cFuncFree','MCMCMethod','cprnd-gibbs','errorresid',ErrorResid));
     %[NewSols] = cprnd(NumSamples,AMatNew,BrhsNew,struct('method','hitandrun'));
     %vValid = ones(NumSamples,1);
 
@@ -6208,13 +6217,13 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     
     ProbForm.solver = 'linprog';
     ProbForm.options = struct('Algorithm','interior-point','maxiter',15000,'Display','off');
-    
+    dirs = 2*strcmpi(cAnswers{5},'min')-1; % Map boolean (1 0) to (1 -1)
+ 
     for i=1:nNewO
-        dirs(i) = 2*strcmpi(cAnswers{5,i},'min')-1; % Map boolean (1 0) to (1 -1)
-        
-        if (dirs(i)*cAnswers{6,i} < dirs(i)*1)
+             
+        if (dirs(i)*cAnswers{6}(i) < dirs(i)*1)
             warning(['Tolerance of new objective #', num2str(i),' does not match direction. Inverting tolerance'])
-            cAnswers{6,i} = 1/cAnswers{6,i};
+            cAnswers{6}(i) = 1/cAnswers{6}(i);
         end
         
         ProbFormSingle = ProbForm;
@@ -6229,7 +6238,7 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     vObjLabelsAdd = cell(1,cAnswers{1});
     
     for i=1:nNewO
-        vObjLabelsAdd{i} = strcat(cAnswers{3,i},' (',cAnswers{4,i},')');
+        vObjLabelsAdd{i} = strcat(cAnswers{3}(i),' (',cAnswers{4}(i),')');
     end
     
     vObjLabelsNew = [vObjLabelsOrig vObjLabelsAdd{:}];
@@ -6273,7 +6282,7 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     end    
     
     %Update the data set
-    mObjsNew = [mObjsOrig mDecsOrig*mNewObjCoef'; cFuncOrig*vOptSols' vOptObjVals]; %calculate new objective function values for prior alternatives; include objective function values for new optimal solutions
+    mObjsNew = [mObjsOrig mDecsOrig*mNewObjCoef'; vOptSols*cFuncOrig' vOptObjVals]; %calculate new objective function values for prior alternatives; include objective function values for new optimal solutions
     mDecsNew = [mDecsOrig; vOptSols];
     
     %Save the new parameters and dataset back to the Window so we can use them in resampling
