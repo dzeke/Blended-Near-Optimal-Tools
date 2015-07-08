@@ -1,45 +1,54 @@
 Blended Near-Optimal Tools
 ==============================
-This repository stores the Matlab 2013a source code for blended near-optimal tools that (a) generate alternatives, (b) visualize alternatives, and allow a user to interactively explore the near-optimal region from which alternatives are generated. The repository also contains the data and model files for a (c) linear programming example application to manage water quality for Echo Reservoir, Utah and (d) mixed-integer programming example application to manage water supply and demands in Amman, Jordan. The repository additionally provides (e) documentation on the above tools--including the paper submitted to Water Resources Research, scripts, and directions to generate each figure in the paper.
+This repository stores the Matlab 2013a source code and (1) Documentation for blended near-optimal tools that (2) generate alternatives, (3) visualize alternatives, and allow a user to interactively explore the near-optimal region from which alternatives are generated. The repository also contains the data and model files for a (4) linear programming example application to manage water quality for Echo Reservoir, Utah, (5) mixed-integer programming example application to manage water supply and demands in Amman, Jordan, and (6) multi-objective linear programming reservoir operations problem.
 
 Near-optimal alternatives perform within a (near-optimal) tolerable deviation of the optimal objective function value and are of interest to managers and decision makers because they can address un-modelled objectives, preferences, limits, uncertainties, or issues that are not considered by the original optimization model or it's optimal solution. Mathematically, the region of near-optimal alternatives is defined by the constraints for the original optimization model as well as a constraint that limits alternatives to those with objective function values that are within a tolerable deviation of the optimal objective function value. The code and tools within this repository allow users to generate and visualize the structure and full extent of the near-optimal region to an optimization problem. The tools also allow users to interactively explore region features of most interest, streamline the process to elicit un-modelled issues, and update the model formulation with new information. The tools and their use are described here for generating, visualizing, and interactively exploring near-optimal alternatives to optimization problems, but the tools are general and can be used to generate and visualize points within any high-dimensional, closed, bounded region that can be defined by a system of constraints. The parallel coordinate visualization and several interaction tools can also be used for any high-dimensional data set.   
 
 Below is listing of the repository contents by folder as well as additional information on citation, licensing, bug reports and authorship.
 
 ==============================
-1) DOCUMMENTATION (Paper and Scripts)
+1) DOCUMMENTATION (Steps to get started, Paper, and Scripts)
 
-Includes the paper re-submitted to Water Resources Research in February 2015 (under review) that describes this work as well as peer-reviewer comments and author responses to earlier drafts submitted in August, 2013, September 2014, and December 2014. Also provides scripts and directions to generate each figure shown in the paper. These scripts make use of each of the tools described in sections 2) to 4). To generate each figure in the manuscript:
-
-    a. Download all the files in the folder 1-Documentation\ScriptsForPaper as well as the folders 2-GenerateAlternatives, 3-InteractiveParallelPlot, and 4-EchoReservoirApplication folders to a single folder on your local machine.
-    b. In Matlab, add the target folder where you downloaded the files to your Matlab path
-    c. Install the General Algebraic Modeling System (GAMS) version 24.3.3 or more recent
-       - Download from www.gams.com.
-       - In Matlab, add the directory where you installed GAMS to the Matlab Path. On the Ribbon, select Home tab=>Environment=>Set Path. In the Set Path window, click the Add with subfolders… button and navigate to the directory where you installed GAMS. 
-       - Set the Matlab directory to the same folder
+Steps to Get Started:
+    a. Install Matlab version 2013 or higher on your computer.
+    b. Install the General Algebraic Modeling System (GAMS) version 24.3.3 or more recent.
+	  i. Download from www.gams.com.
+	  ii. In Matlab, add the directory where you installed GAMS to the Matlab Path. On
+the Ribbon, select Home tab=>Environment=>Set Path. In the Set Path
+window, click the Add with subfolders… button and navigate to the directory
+where you installed GAMS.
+    c. Download all code for the Blended Near-Optimal Tools from the GitHub repository at
+https://github.com/dzeke/Blended-Near-Optimal-Tools.
+	  i. Click the button labeled Download ZIP at the far right bottom.
+	  ii. Unzip the folder
+	  iii. Add the location where you unzipped the folder to the Matlab Path as in Step b2.
     d. At the Matlab command prompt, enter:
 
 	       >> FigGenForNearOptPaper
 
     e. The script will generate Figures 1, 2, 3, and 5 in the submitted manuscript and prompt you whether to generate additional results discussed but not presented in the paper (select no).
-    f. See the file Documentation-readme.txt for further instructions on how to interactively generate figures 4, 5, 6, and 7 from Figure 3.
+    f. See the file Documentation-readme.txt and comments in FigGenForNearOptPaper.m for further instructions on how to interactively generate figures 4, 5, 6, and 7 from Figure 3.
 
-Also provides directions and an example to load your own model data into the near-optimal tools.
+Further Use:
+    Open the file NearOptimalManagement-Lab.pdf (in the 1-Documentation folder) and follow the step-by-step directions and instructions to use the near-optimal tools on existing Echo Reservoir phosphorus removal (See Section 4 below) and reservoir operations problems (see Section 6 below) (approximately 2-hours). 
 
-See also the directions in the file Rosenberg-Workshop-NearOptimalManagement-Jan16.pdf for a workshop given at Tarbiat Modares University in Tehran, Iran in January 2015.
+Advanced Use (load your own data):
+    Open the file LoadYourOwnModel.m (in the 1-Documentation folder) and follows the directions and example for how to load your own model data into the near-optimal tools. Specific directions for linear programs, more general directions for mixed-integer programs.
+
+The documentation also provides copies of the pre-publication version of the paper describing the tools, draft manuscripts, and responses to reviwer comments. THe final, open access published version of the paper is also available at http://dx.doi.org/10.1002/2013WR014667.
+ 
 
 ==============================
 2) GENERATE ALTERNATIVES
 
 Uses stratified Monte-Carlo Markov Chain Gibbs sampling to identify a large number of alternatives that comprehensively span the near-optimal region through both the decision and objective spaces. To get started:
 
-    a. Download all the files in the folder 2-GenerateAlternatives to a folder on your local machine.
-    b. Add the target folder to your Matlab path.
-    c. At the Matlab prompt, invoke the function
+    a. Complete steps a-c above in the 1-Documentation section
+    d. At the Matlab prompt, invoke the function
        
          >> stratgibbs(...)
        
-    d. See additional directions in the file GenerateAlternatives-readme.txt for use of the stratgibbs function.
+    e. See additional directions in the file GenerateAlternatives-readme.txt for use of the stratgibbs function.
 
 ==============================
 3) PARALLEL COORDINATE VISUALIZATION and INTERACTION
@@ -53,13 +62,12 @@ Parallel coordinate plot places axes for all objectives and decision variables s
 
 To get started:
 
-    a. Download all the files in the folders 2-GenerateAlternatives and 3-InteractiveParallelPlot to a single folder on your local machine.
-    b. In Matlab, add the target folder where you downloaded the files to your Matlab path
-    c. At the Matlab command prompt, invoke the following function:
+    a. Complete steps a-c above in the 1-Documentation section
+    d. At the Matlab command prompt, invoke the following function:
 
 	       >> nearoptplotmo2(...)
 
-    d. See additional directions in the file InteractiveParallelPlot-readme.txt and in the header of the nearoptplotmo2.m for use of the function.
+    e. See additional directions in the file InteractiveParallelPlot-readme.txt and in the header of the nearoptplotmo2.m for use of the function.
 
 ==============================
 4) ECHO RESERVOIR APPLICATION (Linear program to manage water quality)
@@ -68,9 +76,7 @@ Illustrates use of the tools for a linear program to identify the cost-effective
 
 To use:
 
-    a. Download all the files in the folders 2-GenerateAlternatives, 3-InteractiveParallelPlot, and 4-EchoReservoirApplication to a single folder on your local machine.
-    b. In Matlab, add the target folder where you downloaded the files to your Matlab path.
-    c. Set the Matlab directory to the same folder
+    a. Complete steps a-c above in the 1-Documentation section
     d. At the Matlab command prompt, enter:
 
 	       >> LoadEchoGamsResultsMGAComp('WQNE_outG6.gdx',3,2500,0,[2 0 50]);
@@ -85,15 +91,25 @@ Illustrates use of the tools for a mixed-integer program to identify the cost-ef
 
 To use:
 
-    a. Download all the files in the folders 3-InteractiveParallelPlot and 5-AmmanJordanApplication to a single folder on your local machine.
-    b. In Matlab, add the target folder where you downloaded the files to your Matlab path.
-    c. Set the Matlab directory to the same folder
+    a. Complete steps a-c above in the 1-Documentation section
     d. At the Matlab command prompt, enter:
 
 	       >> LoadAmmanJordan(AmmanJordanUtilOptNear.gdx)
 
     e. Matlab will read optimal and near-optimal results from the file AmmanJordanUtilOptNear.gdx and plot the results in the Interactive Parallel Plotting tool (see Section 3 above).
     f. For interactive use, see additional directions in the file AmmanJordanApplication-readme.txt.
+    
+    ==============================    
+6) RESERVOIR OPERATIONS Problem (Hydro-economic example)
+
+Illustrates use of the tools for a linear programming hydroeconomic reservoir operations problem over six time periods that maximizes benefits from hydropower generation and irrigation supply while respecting an in-stream flow requirement. To use:
+
+    a. Complete steps a-c above in the 1-Documentation section
+    d. At the Matlab prompt, enter the command:
+
+	>> ReservoirOperationProblem([])
+	
+    e. Follow further instructions in the Lab exercise 1-Documentation/NearOptimalManagement-Lab.pdf.
 
 ==================
 CITATION
