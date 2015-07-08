@@ -10,18 +10,23 @@ Below is listing of the repository contents by folder as well as additional info
 1) DOCUMMENTATION (Steps to get started, Paper, and Scripts)
 
 Steps to Get Started:
+
     a. Install Matlab version 2013 or higher on your computer.
     b. Install the General Algebraic Modeling System (GAMS) version 24.3.3 or more recent.
+	  
 	  i. Download from www.gams.com.
 	  ii. In Matlab, add the directory where you installed GAMS to the Matlab Path. On
 the Ribbon, select Home tab=>Environment=>Set Path. In the Set Path
 window, click the Add with subfolders… button and navigate to the directory
 where you installed GAMS.
+
     c. Download all code for the Blended Near-Optimal Tools from the GitHub repository at
 https://github.com/dzeke/Blended-Near-Optimal-Tools.
+
 	  i. Click the button labeled Download ZIP at the far right bottom.
 	  ii. Unzip the folder
 	  iii. Add the location where you unzipped the folder to the Matlab Path as in Step b2.
+	  
     d. At the Matlab command prompt, enter:
 
 	       >> FigGenForNearOptPaper
@@ -37,7 +42,6 @@ Advanced Use (load your own data):
 
 The documentation also provides copies of the pre-publication version of the paper describing the tools, draft manuscripts, and responses to reviwer comments. THe final, open access published version of the paper is also available at http://dx.doi.org/10.1002/2013WR014667.
  
-
 ==============================
 2) GENERATE ALTERNATIVES
 
@@ -100,7 +104,7 @@ To use:
     f. For interactive use, see additional directions in the file AmmanJordanApplication-readme.txt.
     
     ==============================    
-6) RESERVOIR OPERATIONS Problem (Hydro-economic example)
+6) RESERVOIR OPERATIONS PROBLEM (Hydro-economic example)
 
 Illustrates use of the tools for a linear programming hydroeconomic reservoir operations problem over six time periods that maximizes benefits from hydropower generation and irrigation supply while respecting an in-stream flow requirement. To use:
 
