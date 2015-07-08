@@ -59,7 +59,7 @@ OUTPUTS
 * Version history
 
 %% #####################
-%   Programmed by David E. Rosenberg, Omar and Alminagorta
+%   Programmed by David E. Rosenberg, Omar Alminagorta
 %
 %   Dept. of Civil & Env. Engineering and Utah Water Research Lab
 %   Utah State University
@@ -79,9 +79,10 @@ OUTPUTS
          http://ascelibrary.org/doi/abs/10.1061/%28ASCE%29WR.1943-5452.0000224
 
 %   If using model versions c,d,e,f cite:
-%        David E. Rosenberg (in review) "Near-optimal alternative generation,
+%        David E. Rosenberg (2015) "Blended near-optimal alternative generation,
 %        visualization, and interaction for water resources decision making".
-%        Water Resources Research. Submitted August 2014
+%        Water Resources Research. doi:10.1002/2013WR014667.
+%        http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
 
 %   Licensing:
 %   This code and all the dependent functions are distributed AS-IS with

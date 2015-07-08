@@ -6,7 +6,17 @@ function LoadAmmanJordan(GDXFile,NumAlts)
     %   GDXFile = name of gdx file with GAMS results to load
     %   NumAlts = number of alternatives to read in (override number
     %       in GDX file)
+    %
+    %
+    %  David E. Rosenberg
+    %
+    %  Citation:
+    %  Rosenberg, D. E. (2012), Near-optimal water management to improve multi-objective decision making, 
+    %  paper presented at 2012 International Congress on Environmental Modelling and Software: Managing 
+    %  Resources of a Limited Planet: Pathways and Visions under Uncertainty, International Environmental 
+    %  Modelling and Software Society, Leipzig, Germany. http://www.iemss.org/sites/iemss2012//proceedings/A2_0656_Rosenberg.pdf.
 
+    % Check if the GDX file exists
     if ~exist(GDXFile,'file')
        error('NearOptimalMIP: %s file does not exist.',GDXFile);
        return

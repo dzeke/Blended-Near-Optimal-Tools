@@ -1,14 +1,14 @@
 Documentation-readme.txt
 
-The Documentation folder contains the script files and directions to generate each figure in the version of the paper re-submitted in February 2015. Additionally, the folder has the final accepted version of the manuscript, slides from a presentation at the European Geophysical Union conference in April 2015, and a folder containing earlier drafts of the manuscript, reviewer comments, and response letters to reviewer comments through 4 rounds of peer-review.
+The Documentation folder contains the script files and specific directions to generate each figure in the print version of the article. Additionally, the folder has the final accepted version of the manuscript, slides from a presentation at the European Geophysical Union conference in April 2015, and a folder containing earlier drafts of the manuscript, reviewer comments, and response letters to reviewer comments through 4 rounds of peer-review.
 
-Rosenberg-2015Feb-BlendedNearOptimalTools.pdf : Final version of the manuscript submitted in February 2015 and accepted for publication.
+Rosenberg-2015Feb-BlendedNearOptimalTools.pdf : Final version of the manuscript submitted in February 2015 and accepted for publication. Final, open access published version available at http://dx.doi.org/10.1002/2013WR014667.
 
 Rosenberg-NearOptimal-EGU-2015.pptx : Slides for a power-point presentation on Near-Optimal made at the European Geophyscial Union annual conference in April 2015.
 
-Rosenberg-2015Feb-ResponseLetter3-BlendedNearOptimalTools.pdf : Letter listing reviewer comments, author responses and descriptions of changes made in the Feb, 2015 version of the paper to address the comments.
+LoadYourOwnModel.m : Directions and example for how to load your own model data into the near-optimal tools. Specific directions for linear programs, more general directions for mixed-integer programs.
 
-LoadYourOwnModel.m : Directions and example for how to load your own model data into the near-optimal tools. Specific directions for linear programs, more general directions for mixed-integer and non-linear programs.
+NearOptimalManagement-Lab.pdf : Step-by-step directions and instructions to use the near-optimal tools in a computer lab activitity (approximately 2-hours). 
 
 Within the ScriptsForPaper folder:
 
@@ -27,6 +27,8 @@ The file also contains the commands and directions to generate all the results t
 - Delcols.m, extrdir.m, extrpts.m, polygeom.m : other Matlab files used by the above scripts.
 
 Within the ManuscriptDrafts folder:
+
+- Rosenberg-2015Feb-ResponseLetter3-BlendedNearOptimalTools.pdf : Letter listing reviewer comments, author responses and descriptions of changes made in the Feb, 2015 version of the paper to address the comments.
 
 - Rosenberg-2014Dec-BlendedNearOptimalTools.pdf : revised version of the manuscript re-submitted to Water Resources Research in Dec 2014 that addresses 2nd round of reviewer comments.
 

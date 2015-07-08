@@ -98,8 +98,10 @@ $Ontext
      - Sped up mixed-Integer enumeration alogorithm per Step 4 above
 
    CITATION:
-     David E. Rosenberg (in review) "Near-optimal alternative generation, visualization, and interaction for water resources decision making".
-     Water Resources Research. Submitted August 2014.
+      David E. Rosenberg (2015) "Blended near-optimal alternative generation,
+      visualization, and interaction for water resources decision making".
+      Water Resources Research. doi:10.1002/2013WR014667.
+      http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
 
    LICENSING:
    This code is distributed AS-IS with no expressed or implied warranty regarding functionality. The entire code or parts

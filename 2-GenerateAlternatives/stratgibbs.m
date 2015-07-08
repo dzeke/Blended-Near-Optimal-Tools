@@ -143,9 +143,10 @@ function [X,vValid,execTime] = stratgibbs(p,problemstruct,options)
 %   - May 8, 2013, First version
 %
 %   Citation:
-%   David E. Rosenberg (in review) "Near-optimal alternative generation,
+%   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
 %   visualization, and interaction for water resources decision making".
-%   Water Resources Research. Submitted August 2014
+%   Water Resources Research. doi:10.1002/2013WR014667.
+%   http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
 
 %   Licensing:
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 

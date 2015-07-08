@@ -6,7 +6,9 @@ function [X, vXs] = maxextentind(problemstruct,options)
 % Each row is independent of one another.
 %
 % Does this by solving 2*n optimization problems to first minimize and next
-% maximize each successive decision variable
+% maximize each successive decision variable. These actions represent Step
+% 2 in Section 3 (Alternative Generation) in the paper Rosenberg (2015).
+%
 %
 %  OUTPUTS
 %   X = a 2n-by-n matrix where row 2i-1 is the minimum value and row 2i is the maximum value of x_i over the polytope
@@ -69,21 +71,36 @@ function [X, vXs] = maxextentind(problemstruct,options)
 %
 %    2. Repeat for each decision variable x2, ... xn 
 %
-% May 1, 2013
-% Updated July 2014 to include fixing decision variables at specified values and the unfixing current decision variable
-% Updated Dec 2014 to allow specifying the algorithm used to solve the underlying LPs
-% Updated Feb 2015 to specify problem formulation as a full Matlab
-%   structure
-
-% LICENSING
+%% #####################
+%   Programmed by David E. Rosenberg
+%
+%   Dept. of Civil & Env. Engineering and Utah Water Research Lab
+%   Utah State University
+%   david.rosenberg@usu.edu
+%
+%   History
+%       - May 1, 2013
+%       - Updated July 2014 to include fixing decision variables at specified values and the unfixing current decision variable
+%       - Updated Dec 2014 to allow specifying the algorithm used to solve the underlying LPs
+%       - Updated Feb 2015 to specify problem formulation as a full Matlab structure
+%
+%   Citation:
+%   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
+%   visualization, and interaction for water resources decision making".
+%   Water Resources Research. doi:10.1002/2013WR014667.
+%   http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
+%
+%   Licensing:
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
 %   may be used for any non-commercial purpose so long as the use is cited per the citation above. Use for any commercial purpose requires 
 %   prior written permission from the author.
-
-
-% Copyright (c) 2013. David E. Rosenberg, Department of Civil and
-% Environmental Engineering and Utah Water Research Lab, Utah State
-% Unviersity. david.rosenberg@usu.edu
+%
+%   Bug Reports and Feedback:
+%   This code is possibly laden with bugs so bug reports and feedback are much appreciated. Please submit via the the issue tracker on the
+%   GitHub repository where you downloaded this file.
+%   Note, that while much appreciated, there is no promise of when--or if--the bug will be fixed.
+%
+%% #######################
 
 %   Cross from full model specification to related value
     %Check validity of full specification

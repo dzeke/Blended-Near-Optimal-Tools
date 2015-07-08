@@ -98,10 +98,6 @@ $Ontext
      Pathways and Visions under Uncertainty, Sixth Biennial Meeting, Leipzig, Germany, pp. 104-111.
      http://www.iemss.org/sites/iemss2012//proceedings/A2_0656_Rosenberg.pdf
 
-   Updated description of method:
-     David E. Rosenberg (in review) "Near-optimal alternative generation, visualization, and interaction for water resources decision making".
-     Water Resources Research. Submitted August 2014.
-
    LICENSING:
    This code is distributed AS-IS with no expressed or implied warranty regarding functionality. The entire code or parts
    may be used for non-commercial purposes so long as the use is cited per the citation above. Use for any commercial purpose requires

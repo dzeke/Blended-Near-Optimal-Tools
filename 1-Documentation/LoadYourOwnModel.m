@@ -20,7 +20,7 @@
 %   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
 %   visualization, and interaction for water resources decision making".
 %   Water Resources Research. doi:10.1002/2013WR014667.
-% http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
+%   http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
 
 %   Licensing:
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
@@ -114,6 +114,7 @@ vObjsVert = mVert*c';
 
 vGroups = ['Optimum'; repmat({'Feasible region'},length(vObjs),1); repmat({'Vertices'},length(vObjsVert),1)];
 mGroupData = ['Feasible region' {1} {1}; 'Vertices' {1} {1.5}; 'Optimum' {1} {2.5}];
+%parallelcoords([[-fopt;vObjs;vObjsVert] [Xopt';XsValid;mVert]])
 nearoptplotmo2([-fopt;vObjs;vObjsVert],[Xopt';XsValid;mVert],'Tolerance',ToleranceVal,'ProbForm',ProbStruct,'cFunc',c,...
       'OptSolRow',1,'NearOptConstraint',size(A_nearopt,1),'ShowControls',0,'FontSize',20,'YAxisMargins',[0.25 0.25],...
       'ShowObjsDiffColor',0,'vGroup',vGroups,'mGroupData',mGroupData,'GroupToHighlight','Optimum');

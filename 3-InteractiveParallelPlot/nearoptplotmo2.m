@@ -496,10 +496,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %      upper-bound constraints
 %
 %   Citation:
-%   David E. Rosenberg (in review) "Near-optimal alternative generation,
+%   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
 %   visualization, and interaction for water resources decision making".
-%   Water Resources Research. Submitted August 2014
-
+%   Water Resources Research. doi:10.1002/2013WR014667.
+%   http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
+%
 %   Licensing:
 %   This code is distributed AS-IS with no expressed or implied warranty regarding functionality. The entire code or parts 
 %   may be used for non-commercial purposes so long as the use is cited per the citation above. Use for any commercial purpose requires 

@@ -1,9 +1,10 @@
 %% FigGenForNearOptPaper.m
-% Matlab 2013b Script to generate Figures in the paper
+% Matlab 2013b Script to generate Figures in the paper:
 % 
-% David E. Rosenberg (in review) "Near-optimal alternative generation,
-% visualization, and interaction for water resources decision making".
-% Water Resources Research. Resubmitted December 2014
+%   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
+%   visualization, and interaction for water resources decision making".
+%   Water Resources Research. doi:10.1002/2013WR014667.
+%   http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
 %
 % The script automatically generates Figures 1, 2, 3, and 5.
 % The script also provides in-comment instructions to interactively produce
@@ -26,9 +27,10 @@
 %   david.rosenberg@usu.edu
 %
 %   Citation:
-%   David E. Rosenberg (in review) "Near-optimal alternative generation,
+%   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
 %   visualization, and interaction for water resources decision making".
-%   Water Resources Research. Submitted August 2014
+%   Water Resources Research. doi:10.1002/2013WR014667.
+%   http://onlinelibrary.wiley.com/doi/10.1002/2013WR014667/full
 
 %   Licensing:
 %   This code is distributed AS-IS with no expressed or implied warranty regarding the claimed functionality. The entire code or parts 
