@@ -122,7 +122,7 @@ David E. Rosenberg (2015). "Blended near-optimal alternative generation, visuali
 
 LICENSING
 
-All code is distributed AS-IS with no expressed or implied warranty regarding functionality. The code or parts may be used for non-commercial purposes so long as the use is cited per the citation above. Use for any commercial purpose requires prior written permission from the author.
+Materials in this GitHub repository are disturbed under a BSD 3-Clause license (see  https://github.com/dzeke/Blended-Near-Optimal-Tools/blob/master/LICENSE). For alternative licensing arrangements, contact David E. Rosenberg directly. 
 
 BUG REPORTS and FEEDBACK
 
