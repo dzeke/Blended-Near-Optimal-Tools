@@ -206,7 +206,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %           Stepped-Sequential OSU ramps) for subsequent groups.
 %
 %     mColorsAxisLabels = an nC*nF by 3 matrix indicating the colors to
-%           use for axis labels and the group table lables. nG = number of decision variable categories
+%           use for axis labels and the group table labels. nG = number of decision variable categories
 %           nF is the number of fields (grouping levels) within each
 %           category. The axis label itself will be plotted in the color on
 %           the nF, 2*nF, 3*nF, etc. rows. The final three columns
@@ -1198,7 +1198,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     %Error checking on vGroup
     
-    %if vGroup is inumeric, convert it to a cell array of strings
+    %if vGroup is numeric, convert it to a cell array of strings
     if isnumeric(vGroup)
         vGroup = arrayfun(@num2str,vGroup, 'unif', 0);
     end
@@ -1250,7 +1250,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     end
 
     if ~isempty(mColors) 
-        vUniqueGroupColors = unique(mColors(:,1));
+        vUniqueGroupColors = unique(squeeze(mColors(:,1,1,:)),'rows');
 
         if nU > length(vUniqueGroupColors)
             colorerrormsg = sprintf('Number of groups exceeds number of group colors provided. Will reuse colors for group #s %d and above.',nU+1);
@@ -1850,7 +1850,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         mColorsDecsGroup = mColors(:,1,1,:);
         mColorsObjsGroup = mColors(:,1+(nO>0),1,:);
         
-        vLineStyle = {'-' '-' '-' '-' '-' '-' '-'};
+        vLineStyle = repmat({'-'},1,nU);
         %vLineStyle = {'-' '-' '-.'};
 
         hPCGroup = cell(nU,2); %Create a cell array of handles to the plots to be created nU groups by (decision variables and objectives) 
@@ -1863,7 +1863,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             end
             
             [lIndToUse,lLineWidth,mColorsDecs,mColorsObjs,strVis] = GetGroupRenderings(i,[]);
-          
+            
             hPCGroup{i,1}= parallelcoords(mGroup,'color',mColorsDecs,'LineStyle',vLineStyle{lIndToUse},'linewidth',lLineWidth,'Standardize',UseStandarize,'Visible',strVis);
             if (nO>0) %overplot the objective axes in a different color
                 strVisObj = Boolean2Enabled(vShowGroup(i) && lObjColorsVis);
