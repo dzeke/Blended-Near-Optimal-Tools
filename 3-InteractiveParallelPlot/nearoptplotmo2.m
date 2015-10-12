@@ -81,7 +81,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %     Tolerance = Near optimal tolerable deviation parameter. Fraction of the optimal objective function value and used to generate
 %         new alternatives for optimization problems. Enter Tolerance > 1 for minimization objectives and Tolerance between 0 and 1 for maximization objectives.
 %         Populates a text box on the Interact tab for generating additional data sets. For multiobjective problems this is a
-%         (1 x nO) vector of values (Default value: 1 by nO vector of 1s)
+%         (1 x nO) vector of values. Input ignored for data sets with no
+%         Objective Function data and text box inactive (Default value: 1 by nO vector of 1s)
 %
 %     AllowableDeviation = the deviation from the slider set value allowed when generating new alternatives
 %         or highlighting alternatives on the plot. This value is specified in
@@ -2277,9 +2278,11 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     NOToleranceLabel = uicontrol('Parent',hTabs(1),'Style', 'text','String','Near Optimal Tolerance (fraction of optimal):', 'Position', [10 lNearTopInteract-20 195 40],'fontsize', fontsizecntls,'BackgroundColor','white');
     NearOptToleranceAll = uicontrol('Parent',hTabs(1),'Style', 'edit','ToolTipString',sNearOpt, 'Position', [215 lNearTopInteract-20+10 45 20],'fontsize', fontsizecntls);
     
-    if nO==1
+    if nO==0
+        set(NearOptToleranceAll,'enable','off');
+    elseif nO==1
         NearOptTolerance(1) = NearOptToleranceAll;
-        set(NearOptTolerance,'String',Tolerance(1));
+        set(NearOptTolerance,'String',Tolerance(1),'enable','on');
     else
         %Multi-objective, the NearOptToleranceAll entrywill update all the text
         %boxes
@@ -4594,7 +4597,9 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     mGroupData = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGroupChecks,txtGroupThicks);
     %Text boxes
     %Tolerance(s)
-    if nO ~= length(txtTolerances) % un-equal size because added objective(s), update values from values preloaded into varargin
+    if nO == 0 %no objective functions or tolerances
+        ToleranceValues = [];
+    elseif nO ~= length(txtTolerances) % un-equal size because added objective(s), update values from values preloaded into varargin
         [ToleranceValues,mGroupData,vFixed]  = aGetField(varargin,{'Tolerance','mGroupData','vFixed'});
     elseif (nO == 1) % Single box
         ToleranceValues = str2num(get(txtTolerances,'String'));
@@ -4604,7 +4609,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
         ToleranceValues = ToleranceValues';
     end
     
-    if any(isempty(ToleranceValues))
+    if (nO > 1) && any(isempty(ToleranceValues))
         error('Un-acceptable near-optimal tolerance input. Must be numeric. Try again');
         return;
     end
