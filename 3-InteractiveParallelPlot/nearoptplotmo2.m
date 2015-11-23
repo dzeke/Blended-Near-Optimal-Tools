@@ -309,8 +309,29 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %`           Once a plot is generated, hover the mouse over an axis to see
 %               the actual data value.
 %
+%     TickLabels = specifies the style and positioning of the scale and
+%               tick labelings. Options are:
+%               1) LeftRight2Scale - Use left ticks and Y axis label as
+%                   common tick label and scale for all objective functions. Use right ticks and 
+%                   Y axis label as comon tick label and scale for all decision variables.
+%                   Scale axes by multipliers (see parameter TickMag) so
+%                   can plot on common set of left and right tick labels. {Default}
+%
+%               2) MinMaxEachAxis - Use bottom and top x axis ticks and tick
+%                    labels to plot the minimum and maximum values for each axis just
+%                    below and above each parallel coordinate axis.
+%                    Ignores NumTicks and TickMag settings.
+%
+%               3) MinMaxTicks - The MinMaxEachAxis setting with additional
+%                  ((( NOT YET IMPLEMENTED )))
+%                      individual tick scales on each axes. Requires the
+%                      additional parameter mTicksAxes:
+%                           - mTicksAxes = k x (nO+nD) matrix or cell array with k tick
+%                             labeles for each objective and decision axis.
+
+%
 %     NumTicks = specifies the number of ticks to include on the left and
-%               scales. A scalar value indicates the same number of ticks
+%               right scales. A scalar value indicates the same number of ticks
 %               on the left and right scales. A 2 element vector, e.g, 
 %               [8, 4] specifies 8 ticks on the left scale and 4 ticks on
 %               the right scale. NOTE: the right number of ticks is ignored for
@@ -584,6 +605,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     mActCat = repmat({'1'},nD,1); lShowGroupLabelsEnable = 'off';
     AxisScales='none';
     BaseAxis=[min(nO,1) 1];  %put a zero in the first element if there are no objective axes
+    TickLabels = 'MinMaxEachAxis';
     NumTicks = [6 6];
     TickMag = 5;
     mLims = zeros(2,n);
@@ -741,10 +763,6 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                     case 'none'
                         count=count+1;
                     case 'standardize'
-                        %make the plot window narrower to accomate the
-                        %extra tick labels
-                        %PlotPosition(1) = .15;
-                        %PlotPosition(3) = PlotPosition(3)-.1;
                         count=count+1;
                     case 'normalize'
                         count=count+1;
@@ -796,6 +814,28 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'mGroupData'))             
                 mGroupData = varargin{count+1};
                 count=count+1; 
+                
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'TickLabels'))             
+                TickLabelsTemp = lower(varargin{count+1});
+                
+                switch (AxisScales)
+                    case 'leftright2scale'
+                        TickLabels = TickLabelsTemp;
+                        count=count+1;                        
+                    case 'minmaxeachtaxis'
+                        TickLabels = TickLabelsTemp;
+                        count=count+1;
+                    case 'minmaxticks'
+                        if (nargin>=count+1) && (ismatrix(varargin{count+1}))
+                            mTickLabels = varargin{count+1};
+                            count=count+1;
+                        end
+
+                    otherwise
+                        warning(['nearoptplotmo2: TickLabels value of ', TickLabelsTemp, ' not recognized. Continuing with default setting of LeftRight2Scale.'])                                                  
+                        count=count+1;
+                end 
+                
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'FontSize'))
                 FontSize = abs(varargin{count+1});
@@ -1358,7 +1398,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     %% Start building the plot
      
     %Get the Figure Handle
-    if (hWind>0) && ishandle(hWind)
+    if strcmpi(class(hWind),'matlab.ui.Figure') || ((hWind>0) && ishandle(hWind))
         Figure2 = hWind;
         clf(Figure2);
         %sprintf('Cleared figured')
@@ -1898,9 +1938,15 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
            'YColor',mColorYScales(1,:));
    
     set(ax2,'yLim',[ymin ymax],'xLim',vLims,'Xticklabel',[],'Xtick',[],'fontsize',FontSize-4);
-    RightTicks = str2num(get(ax2,'YTickLabel'));
-    class(RightTicks);
-    RightTicks;
+    RightTicksRaw = get(ax2,'YTickLabel');
+    if strcmpi(class(RightTicksRaw),'char')
+        %MATLAB versions 14a and earlier; TickLabels as character array
+        RightTicks = str2num(get(ax2,'YTickLabel'));
+    else
+        %MATLAB versions 14b and higher; TickLabels as cell array
+        RightTicks = str2double(get(ax2,'YTickLabel'));
+    end
+    
     ylabel(ax2,AxisLabelsNew{2},'fontsize',FontSize);
 
     
@@ -2066,20 +2112,23 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
        hTabs(i) = uipanel('Title','','FontSize',fontsizecntls,...
                  'BackgroundColor','white','parent',ControlFrame,...
                  'Position',[0.02 0.025 .98 1-0.08]);
-       hTabButtons(i) = uicontrol('Parent',ControlFrame,'Style', 'pushbutton','ToolTipString',sTabTips{i},'units','normalized','String', ButtonText{i},...
-            'Position', [.05+.31*(i-1) .92 .31 .035],'fontsize', fontsizecntls);
        if i~=lStartTab
            set(hTabs(i),'visible','off');
-       else
-           set(hTabButtons(i),'BackgroundColor','white');
        end
     end    
 
-    %set the callback functions for the tab buttons
     for i=1:3
+        hTabButtons(i) = uicontrol('Parent',ControlFrame,'Style', 'pushbutton','ToolTipString',sTabTips{i},'units','normalized','String', ButtonText{i},...
+            'Position', [.05+.31*(i-1) .92 .31 .035],'fontsize', fontsizecntls);
+        if i==lStartTab
+            set(hTabButtons(i),'BackgroundColor','white');
+        end
+    end
+    
+    for i=1:3
+        %set the callback functions for the tab buttons
         set(hTabButtons(i),'Callback', {@ShowTab,i,hTabs,hTabButtons,get(hTabButtons(2),'BackgroundColor')});
     end
-
     %Get the position of the tab in pixels
     %get(hTabs(1),'Position')
     set(hTabs(1),'Units','pixel');
