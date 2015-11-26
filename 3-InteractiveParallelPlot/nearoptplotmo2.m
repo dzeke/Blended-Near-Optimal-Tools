@@ -2742,7 +2742,7 @@ end
     
 %Create the cartesian inset graph
 if nO==2
-    [hInsetPlot,hBackBox] = LaunchInset(hWindReturn);
+    [hInsetPlot,uipBackInsetPanel] = LaunchInset(hWindReturn);
     if ShowInsetPlot
         ToggleInset(uimShowInset,0);
     end
@@ -4151,12 +4151,18 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
 
     %Handlers for the Cartesian Inset plot
     % 
-    function [hInsetPlotLocal,hBackBoxLocal] = LaunchInset(hWindMain)
-        %Create a hidden axes and back plot
+    function [hInsetPlotLocal,uipBackInsetPanelLocal] = LaunchInset(hWindMain)
+        %Create a hidden axes for cartesean inset plot of objective functions.
+        %Bind the hidden axes to a panel to make stacking and turning
+        %on/off easier
         %hWindMain = handle to the main Plot window
         %fontsizeMain = fontsize of the main window
-        hInsetPlotLocal = axes('Parent',hWindMain,'box','on','visible','off');
-        hBackBoxLocal = annotation(hWindMain,'rectangle','FaceColor',[0.8 0.8 0.8],'visible','off');
+       
+        uipBackInsetPanelLocal =  uipanel('Title','','FontSize',fontsizecntls,...
+                 'BackgroundColor',[0.8 0.8 0.8],'parent',hWindMain,'HighlightColor',[0 0 0], ...
+                 'units','characters','visible','off');
+        hInsetPlotLocal = axes('Parent',hWindMain,'box','on','visible','off','Parent',uipBackInsetPanelLocal);
+        %annotation(hWindMain,'rectangle','FaceColor',[0.8 0.8 0.8],'visible','off');
     end
 
     function ToggleInset(hInd,event)
@@ -4167,7 +4173,7 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
             UpdateInset;
         else
             %Hide the objective
-            set([hInsetPlot hBackBox],'Visible','off');
+            set([hInsetPlot uipBackInsetPanel],'Visible','off');
             set(get(hInsetPlot,'Children'),'Visible','off');
         end 
     end
@@ -4186,10 +4192,14 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
        %ax=cell2mat(get(main_fig,'Position'));
        ax = get(plot2,'Position');
        
-       inset_size = 0.2;
-       InnerPos = [ax(1,1)+0.65*ax(1,3) ax(1,2)+ax(1,4)-0.65*inset_size 0.82*inset_size 0.75*inset_size]; %0.8
-
-       set(hInsetPlot,'Position',InnerPos,'fontsize',FontSize-4);
+       inset_size = 0.25;
+       %InnerPos = [ax(1,1)+0.65*ax(1,3) ax(1,2)+ax(1,4)-0.65*inset_size 0.82*inset_size 0.75*inset_size]; %0.8
+       InnerPos = [ax(1,1)+0.5*ax(1,3) ax(1,2)+ax(1,4)-0.65*inset_size inset_size inset_size];
+       %Position the Panel and axis inside it
+       set(uipBackInsetPanel,'units','normalized','Position',InnerPos);
+       set(hInsetPlot,'OuterPosition',[0 0 1 1],'fontsize',FontSize-4);
+       %set(hInsetPlot,'Position',InnerPos,'fontsize',FontSize-4);
+       
        delete(get(hInsetPlot,'Children'));
        hold on
 
@@ -4282,14 +4292,15 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
        ylabel(cAxisLabels{1},'FontSize',FontSize-2,'color',[.737 0 0.737]);
        xlabel(cAxisLabels{2},'FontSize',FontSize-2,'color',[.737 0 0.737]);
 
-       %Create a blank box to go behidnd the incoming figure
-       set(hInsetPlot,'visible','on');
-       vOuterPos = get(hInsetPlot,'OuterPosition');    
-       %hBackBox = annotation(hWindReturn,'rectangle',vOuterPos,'FaceColor',[0.8 0.8 0.8]);
-       set(hBackBox,'position',vOuterPos,'Visible','on');
+       %Turn the elements on
+       set([hInsetPlot uipBackInsetPanel],'visible','on');
+       %vOuterPos = get(hInsetPlot,'OuterPosition');    
+       %uipBackInsetPanel = annotation(hWindReturn,'rectangle',vOuterPos,'FaceColor',[0.8 0.8 0.8]);
+       %set(uipBackInsetPanel,'position',vOuterPos,'Visible','on');
  
        drawnow; pause(0.1); %let the gui catch up
-       uistack(hInsetPlot,'top');
+       %uistack(hInsetPlot,'top');
+
     end
 
 %%  Generate Solution Input Box Callback Functions
