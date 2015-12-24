@@ -46,8 +46,12 @@ function [hReturn vParams] = ReservoirOperationProblem(ProblemData)
 %       plot tool
 
 
-% To run, download all the files in the folders 2-GenerateAlternatives and
-% 3-InteractiveParallelPlot on the GitHub repository.
+% TO USE with DEFAULT SETTINGS:
+%  1) Download all the files in the folders 2-GenerateAlternatives and
+%      3-InteractiveParallelPlot on the GitHub repository.
+%  2) Make the folder active, and
+%  3) At the Matlab Command prompt, enter:
+%        >> ReservoirOperationProblem([])
 %
 % #####################
 %   Programmed by David E. Rosenberg
@@ -267,7 +271,8 @@ function [hReturn vParams] = ReservoirOperationProblem(ProblemData)
           'vXLabels',vXLabels,'vObjLabels',vObjLabels,'yAxisLabels',yAxisLabels,'HideCheckboxes',1, ...
           'ShowObjsDiffColor',0,'vGroup',vGroups,'mGroupData',mGroupData,'GroupToHighlight','Optimum', ...
           'ShowGroupLabels',1,'ErrorResid',-1e-6,'StartTab',1,'GenerateType',3,'GenerateMethod',2, ...
-          'AxisScales','custom',[1 1],[0 zeros(1,T*5);60*ones(1,T*5+1)]};
+          'AxisScales','custom',[1 1],[0 zeros(1,T*5);60 60*ones(1,T*5)]};
+                %'TickLabelPos','MinMaxEachAxis', ...
 
     %The plot command
     nearoptplotmo2(-fopt,Xopt',vParams{:});

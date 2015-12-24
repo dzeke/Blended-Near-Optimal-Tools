@@ -309,7 +309,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %`           Once a plot is generated, hover the mouse over an axis to see
 %               the actual data value.
 %
-%     TickLabels = specifies the style and positioning of the scale and
+%     TickLabelPos = specifies the style and positioning of the scale and
 %               tick labelings. Options are:
 %               1) LeftRight2Scale - Use left ticks and Y axis label as
 %                   common tick label and scale for all objective functions. Use right ticks and 
@@ -320,11 +320,17 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
 %               2) MinMaxEachAxis - Use bottom and top x axis ticks and tick
 %                    labels to plot the minimum and maximum values for each axis just
 %                    below and above each parallel coordinate axis.
-%                    Ignores NumTicks and TickMag settings.
+%                    Ignores NumTicks and TickMag settings. This option is
+%                    only available for AxisScales setting 'custom'.
+%                    Optional parameter:
+%                       - mMinMaxLabels - 2 x n cell array with labels to
+%                       put on the min and max tick label for each axis.
+%                       Leave empty or individual '' to default to value in mLims                       
 %
 %               3) MinMaxTicks - The MinMaxEachAxis setting with additional
 %                  ((( NOT YET IMPLEMENTED )))
-%                      individual tick scales on each axes. Requires the
+%                      individual tick scales on each axes. This option is
+%                      only available for AxisScales setting 'custom'. Requires the
 %                      additional parameter mTicksAxes:
 %                           - mTicksAxes = k x (nO+nD) matrix or cell array with k tick
 %                             labeles for each objective and decision axis.
@@ -605,7 +611,9 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     mActCat = repmat({'1'},nD,1); lShowGroupLabelsEnable = 'off';
     AxisScales='none';
     BaseAxis=[min(nO,1) 1];  %put a zero in the first element if there are no objective axes
-    TickLabels = 'MinMaxEachAxis';
+    TickLabelPos = 'LeftRight2Scale';
+    mMinMaxLabels = repmat({''},2,n);
+    mMinMaxLabelsTemp = {};
     NumTicks = [6 6];
     TickMag = 5;
     mLims = zeros(2,n);
@@ -639,6 +647,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     
     yBottom = 0.47;
     PlotPosition = [0.100 yBottom 0.615 0.6182 - yBottom + 0.3068];
+    PlotPositionDefault = 1; %Boolean to indicated when values at default
     YAxisMargins = [0 0.5];
     PanelWidth = 60; %Characters; PanelWidth = 285; %pixel
     
@@ -815,27 +824,35 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 mGroupData = varargin{count+1};
                 count=count+1; 
                 
-            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'TickLabels'))             
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'TickLabelPos'))             
                 TickLabelsTemp = lower(varargin{count+1});
                 
-                switch (AxisScales)
+                switch (TickLabelsTemp)
                     case 'leftright2scale'
-                        TickLabels = TickLabelsTemp;
+                        TickLabelPos = varargin{count+1};
                         count=count+1;                        
-                    case 'minmaxeachtaxis'
-                        TickLabels = TickLabelsTemp;
-                        count=count+1;
-                    case 'minmaxticks'
-                        if (nargin>=count+1) && (ismatrix(varargin{count+1}))
-                            mTickLabels = varargin{count+1};
+                    case 'minmaxeachaxis'
+                        TickLabelPos = varargin{count+1};                                
+                        if ((count+2 <= nargin - 2) && (size(varargin{count+2},1)==2) && (size(varargin{count+2},2)==nO+nD))
+                            %The next parameter is a matrix of size 2 x (nO+nD) and is mMinMaxLabels
+                            mMinMaxLabelsTemp = varargin{count+2};
+                            count = count+2;
+                        else
                             count=count+1;
                         end
-
+                    case 'minmaxticks'
+                        TickLabelPos = 'MinMaxEachAxis';
+                        count=count+1;
+                        warning(['nearoptplotmo2: TickLabels value of ', TickLabelsTemp, ' not yet implemented. Continuing with ', TickLabelPos]);
+                       
                     otherwise
                         warning(['nearoptplotmo2: TickLabels value of ', TickLabelsTemp, ' not recognized. Continuing with default setting of LeftRight2Scale.'])                                                  
                         count=count+1;
                 end 
                 
+            elseif (ischar(varargin{count}) && strcmpi(varargin{count},'mMinMaxLabels'))             
+                mMinMaxLabelsTemp = (varargin{count+1});
+                count = count+1;
                 
             elseif (ischar(varargin{count}) && strcmpi(varargin{count},'FontSize'))
                 FontSize = abs(varargin{count+1});
@@ -969,6 +986,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 if (length(varargin{count+1})==4)
                     PlotPosition = varargin{count+1};
                     yBottom = PlotPosition(2);
+                    PlotPositionDefault = 0;
                 else
                     warnmsg = ['nearoptplotmo2: PlotPosition has', num2str(length(PlotPosition)), ' but needs 4. Continuing with default position.'];
                     warning(warnmsg)
@@ -1395,6 +1413,33 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         vStep = (max(mResults,[],1)-min(mResults,[],1))/20;
     end
     
+    %Check consistancy of AxisScales and TickLabelPos. Only non
+    %LeftRight2Scale settings allowed for AxisScales setting of custom.
+    %Calculate a boolean parameter to determine whether to plot ticks on
+    %left and right
+    if ~strcmpi(AxisScales,'custom') && ~strcmpi(lower(TickLabelPos),'leftright2scale')
+        warning(['nearoptplotmo2: TickLabelPos setting ',TickLabelPos, 'not compatible with AxisScales setting ',AxisScales,'. Using default TickLabelPos setting'])
+        TickLabelPos = 'LeftRight2Scale';
+    end
+    
+    UseLeftRightTicks = strcmpi(lower(TickLabelPos),'leftright2scale');
+    
+    %Error checking on the MinMaxLabels
+    if ~isempty(mMinMaxLabelsTemp)
+        if iscell(mMinMaxLabelsTemp) && (size(mMinMaxLabelsTemp,1)==2) && (size(mMinMaxLabelsTemp,2)==n)
+               mMinMaxLabels = mMinMaxLabelsTemp;
+        else
+            warning(['nearoptplotmo2: mMinMaxLabels is not a cell matrix of size 2 x ',num2str(n),'. Using default values in mLims'])
+        end
+    end
+    
+    %
+    %reset PlotPosition if not showing controls and PlotPosition is at
+    %default values
+    if (ShowControls == 0) && (PlotPositionDefault == 1)
+        PlotPosition = [0.100 yBottom 0.8 1-yBottom-0.1];
+    end
+
     %% Start building the plot
      
     %Get the Figure Handle
@@ -1640,7 +1685,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
         %allow Matlab to determine the y axis limits            
         yLimsSecond = get(plot2,'yLim');
     end
-    yLimsSecond;
+    
     ymax = yLimsSecond(2);
     ymin = yLimsSecond(1);
     %Create a set of ticks along these limits
@@ -1680,14 +1725,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                end
            end
         end
-        
-           %mResults;
-           %mPlot;
-
-           %dticks;
-           %lticks;
-           %rticks;
-                     
+                             
             %work on the scale and label for the left (objective) and right (decision) axis labels in turn                                              
             for k=1:2
                 if (k==1)
@@ -1745,33 +1783,35 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
             end
 
             %vMults = [vMultObj vMultAll(nO+1:n)-minMultDec]; %ignore the multipliers on the objective function axes since we already dealth with them.
-            vMults;
-            minMults;
-            %adjust the obj and decision axes labels if needed based on the
-            %scale multiplier
-            for i=1:n
-                if (vMults(i)~=0) 
-                      %first read the label
-                      if isempty(findstr(vAxisLabelsAll{i},'('))
-                         s1=vAxisLabelsAll{i};
-                         s2='';
-                     else 
-                         [s1, s2] = strread(vAxisLabelsAll{i},'%s %s','delimiter','(');
-                         s2 = strcat(' (',s2);
-                     end
-                    %reformat the label with adjustment factor added
-                    if TransOffsets(i) == 0
-                        if (vMults(i)>3) || (vMults(i) < 0)
-                            vAxisLabelsAll{i} = sprintf('%s [10^{%d}%s]',char(s1),vMults(i),char(s2));
-                        else
-                           vAxisLabelsAll{i} = sprintf('%s [x%.0f%s]',char(s1),10^vMults(i),char(s2)); 
-                        end
-                    else
-                       vAxisLabelsAll{i} = sprintf('%s [x%.0f + %.0f]',char(s1),10^vMults(i),TransOffsets(i),char(s2));
-                    end
 
+            if UseLeftRightTicks == 1
+                %adjust the obj and decision axes labels if needed based on the
+                %scale multiplier
+
+                for i=1:n
+                    if (vMults(i)~=0) 
+                          %first read the label
+                          if isempty(findstr(vAxisLabelsAll{i},'('))
+                             s1=vAxisLabelsAll{i};
+                             s2='';
+                         else 
+                             [s1, s2] = strread(vAxisLabelsAll{i},'%s %s','delimiter','(');
+                             s2 = strcat(' (',s2);
+                         end
+                        %reformat the label with adjustment factor added
+                        if TransOffsets(i) == 0
+                            if (vMults(i)>3) || (vMults(i) < 0)
+                                vAxisLabelsAll{i} = sprintf('%s [10^{%d}%s]',char(s1),vMults(i),char(s2));
+                            else
+                               vAxisLabelsAll{i} = sprintf('%s [x%.0f%s]',char(s1),10^vMults(i),char(s2)); 
+                            end
+                        else
+                           vAxisLabelsAll{i} = sprintf('%s [x%.0f + %.0f]',char(s1),10^vMults(i),TransOffsets(i),char(s2));
+                        end
+
+                    end
                 end
-            end      
+            end
            
     end
 
@@ -1817,6 +1857,12 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     mTextPos = zeros(n,4);
     chHeight = 1.3; %in characters
     
+    if UseLeftRightTicks == 1
+        lTickOffset = 1;
+    else
+        lTickOffset = 2.5;
+    end
+    
     %display the axis lines and labels
     for i=1:n    
            %['i: ', num2str(i),'; nO: ', num2str(nO)]
@@ -1831,14 +1877,14 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 vColor = [.737 0 0.737];
             end
             set(h3,'linewidth',0.5,'color',lLineColor);
-            hTexts(i) = text(i,0,vAxisLabelsAll{i},'fontsize',FontSize-6,'HorizontalAlignment', 'right','color',vColor,'VerticalAlignment','middle','Rotation',90);
+            hTexts(i) = text(i,0,vAxisLabelsAll{i},'fontsize',FontSize-4,'HorizontalAlignment', 'right','color',vColor,'VerticalAlignment','middle','Rotation',90);
             %set(hTexts(i),'EdgeColor',[0 0 0]); %for help in placing group labels box below
             %ymin-6*(ymax-ymin)/100
-           %Shift the text down belwo the checkbox
+           %Shift the text down below the checkbox
             strCurrUnits = get(hTexts(i),'Units');
             set(hTexts(i),'Units','characters');
             hTextPos = get(hTexts(i),'Position');
-            hTextPos(2) = hTextPos(2) - chHeight-1;
+            hTextPos(2) = hTextPos(2) - chHeight - lTickOffset;
             set(hTexts(i),'Position',hTextPos);
             set(hTexts(i),'Units','normalized');
             mTextPos(i,:) = get(hTexts(i),'Extent');
@@ -2009,9 +2055,30 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
     TicksRight = get(ax2,'ytick');
     TickSize = TicksRight(2)-TicksRight(1);
     
-    %Rebuild the variable argument list to pass along through the controls
+    if UseLeftRightTicks == 0
+        %Hide the left and right plot ticks and instead use the top and
+        %bottom plot ticks to label the min and max values of the parrallel axes 
+        xTickUse = [1:1:n];
+        %Construct a cell matrix of labels from the limits or cell valus
+        %passed
+        mBlanks = strcmp(mMinMaxLabels,'');
+        for i=1:n
+           for j=1:2
+               if mBlanks(j,i)
+                    mMinMaxLabels(j,i) = {mLims(j,i)};
+               end
+           end
+        end
+           
+        set(ax2,'XAxisLocation','top','Xticklabel',mMinMaxLabels(2,:),'Xtick',xTickUse,'YColor',[0 0 0],'yTick',[],'yTickLabel',[]);
+        set(plot2,'Xticklabel',mMinMaxLabels(1,:),'Xtick',xTickUse,'YColor',[0 0 0],'yTick',[],'yTickLabel',[]);
+        %Set up the axis labels and ticks on the left and right plot axes
+        ylabel(plot2,'');
+        ylabel(ax2,'');       
+         
+    end
     
-%    if strcmpi(AxisScales,'custom')
+    %Rebuild the variable argument list to pass along through the controls
         vararg_curr = {'hWind' hWindReturn 'Tolerance' Tolerance 'AllowableDeviation' AllowableDeviation ...
                 'ErrorResid' ErrorResid 'NumSamples' NumSamples 'ObjSamplesPercent' ObjSamplesPercent  ...
                 'vFixed' vFixed 'Precision' Precision 'vFixedVals' vFixedVals 'vStep' vStep 'FontSize' FontSize 'NumTicks' NumTicks 'TickMag' TickMag 'mActCat' mActCat ...
@@ -2020,7 +2087,8 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
                 'vXLabels' vXLabels 'vXLabelsShort' vXLabelsShort 'yAxisLabels' yAxisLabels 'AxisScales' AxisScales 'BaseAxis' BaseAxis 'mLims' mLims ...
                 'TickSize' TickSize 'sGamsFile' sGamsFile 'StartTab' StartTab, 'GenerateType' GenType 'GenerateMethod' GenMethod ...
                 'HideSliders' HideSliders 'HideCheckboxes' HideCheckboxes 'NearOptConstraint' NearOptConstraint 'OptSolRow' OptSolRow ...
-                'mColorsAxisLabels' mColorsAxisLabels 'mColorYScales' mColorYScales 'YAxisMargins' YAxisMargins};
+                'mColorsAxisLabels' mColorsAxisLabels 'mColorYScales' mColorYScales 'YAxisMargins' YAxisMargins ...
+                'TickLabelPos' TickLabelPos 'mMinMaxLabels' mMinMaxLabels};
 
          %Also set app variables for the functon inputs and computations
          setappdata(hWindReturn,'varargs',vararg_curr);
@@ -2222,7 +2290,7 @@ function [hWindReturn] = nearoptplotmo2(mObjs, mDecisions, varargin)
  
         %vertical offset down 1 character, width and height a standard
         %characters as well
-        vPosCbNew = [vPosCb(1) - 3.2/2 vPosCb(2)-1.6  3.2 chHeight];
+        vPosCbNew = [vPosCb(1) - 3.2/2 vPosCb(2)- 1 - lTickOffset  3.2 chHeight];
         set(cbChecks(i),'Position',vPosCbNew);
         set(cbChecks(i),'units','normalized');
     end
@@ -4229,7 +4297,17 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
 
        %Format the tick labels on each axis
        for i=1:size(cAxisProps,1)       
-           if (i==BaseAxis(1)) || ((vMults(i)==vMults(BaseAxis(1))) && all(mTransformToOrig(:,1) - mTransformToOrig(:,2) <= [1e-6;1e-6],1))
+           if strcmpi(TickLabelPos,'MinMaxEachAxis')
+               % ticks don't exist on the main plot, construct from limits
+               if i==1
+                   ColToUse = BaseAxis(1);
+               else
+                   ColToUse = i;
+               end
+               mLimsPU = ConvertPlot2DataUnits(mLims(:,ColToUse),mTransformToOrig(:,ColToUse),1);
+               cTickCurr = [mLimsPU(1):(mLimsPU(2)-mLimsPU(1))/NumTicks(1):mLimsPU(2)];
+               cTickLabelCurr = cTickCurr;               
+           elseif (i==BaseAxis(1)) || ((vMults(i)==vMults(BaseAxis(1))) && all(mTransformToOrig(:,1) - mTransformToOrig(:,2) <= [1e-6;1e-6],1))
                %Use the y ticks on the main plot
                cTickCurr = TicksAllUse{2};
                cTickLabelCurr = TicksAllUse{3};
@@ -4254,10 +4332,11 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
            end
 
            %Clip the labels to the min/max for the axis
-           mLims = [min(mPlot(:,i)); max(mPlot(:,i))];
+           mLimsLoc = [min(mPlot(:,i)); max(mPlot(:,i))];
+             
            lNumTicks = length(cTickCurr);
            iInds = [1:lNumTicks];
-           vLess = iInds(((cTickCurr<mLims(1)) + (circshift(cTickCurr',lNumTicks-1)'>=mLims(1))==2)); vGreater = iInds(((cTickCurr>mLims(2)) + (circshift(cTickCurr',1)'<=mLims(2))==2));
+           vLess = iInds(((cTickCurr<mLimsLoc(1)) + (circshift(cTickCurr',lNumTicks-1)'>=mLimsLoc(1))==2)); vGreater = iInds(((cTickCurr>mLimsLoc(2)) + (circshift(cTickCurr',1)'<=mLimsLoc(2))==2));
 
            cLims = [cTickCurr(vLess) cTickCurr(vGreater)];
            cTickCurr = cTickCurr(vLess:vGreater);
@@ -4654,7 +4733,7 @@ function [outargs,hControls,mObjs,mDecs] = ReadControls(CallFunction,hWindCurr)
     %Update the plot
     drawnow; pause(0.1);
     %Group data
-    mGroupData = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGroupChecks,txtGroupThicks);
+    mGroupData = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGroupChecks,txtGroupThicks,1);
     %Text boxes
     %Tolerance(s)
     if nO == 0 %no objective functions or tolerances
@@ -4754,11 +4833,15 @@ function [ReturnVal] = GetCheckTxtValue(strCallFunction, txtCntl)
     end
 end
 
-function [gNewOrder] = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGroupChecks,txtGroupThicks)
+function [gNewOrder] = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGroupChecks,txtGroupThicks,SortGroups)
     % Takes the input on txtGroupOrders and txtGroupNames boxes all the group info (txtGroupNames, cbGroupChecks, txtGroupThicks)
     % Returns a cell matrix of the newly sorted Group Names and Checked
     % values.
-
+    
+    if nargin == 4
+        SortGroups =0;
+    end
+    
     %Read in the new order
     lNumGroups = length(txtGroupOrders);
     gOrder = cell(lNumGroups,4);
@@ -4769,11 +4852,11 @@ function [gNewOrder] = SortGroupsByTextOrder(txtGroupOrders,txtGroupNames,cbGrou
         gOrder{i,4} = str2num(get(txtGroupThicks(i),'string'));
     end
     
-    %gOrder;
-
-    [gSort, gIC] = sortrows(gOrder,1);
-    
-    %gSort;
+    if SortGroups==1
+        [gSort, gIC] = sortrows(gOrder,1);
+    else
+        gSort = gOrder;
+    end
 
     %Reassign the sorted variables
     gNewOrder = gSort(:,[2:4]);
@@ -5180,6 +5263,8 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     DecInds = [1:nD];
     if nObjs>0
         ObjInds = [1:nObjs];
+    else
+        vKeepObj = [];
     end
     
     if Direction==0 %Prune checked/zeroed axes
@@ -5302,8 +5387,15 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     %vKeepDec;
     
     %Read in the varargin parameters that will be maniputed
-    [vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims ProbForm cFunc BaseAxis Tolerance AllowableDeviation OptSolRow NearOptConstraint blShowInset] = aGetField(varargin_rrax,{'vFixedVals' 'vStep','vXLabels','vXLabelsShort','mActCat','vObjLabels','mLims', 'ProbForm','cFunc','BaseAxis','Tolerance','AllowableDeviation','OptSolRow' 'NearOptConstraint' 'ShowInsetPlot'});
-    
+    %[vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims ProbForm cFunc BaseAxis Tolerance AllowableDeviation OptSolRow NearOptConstraint blShowInset] = aGetField(varargin_rrax,{'vFixedVals' 'vStep','vXLabels','vXLabelsShort','mActCat','vObjLabels','mLims', 'ProbForm','cFunc','BaseAxis','Tolerance','AllowableDeviation','OptSolRow' 'NearOptConstraint' 'ShowInsetPlot'});
+    [vFixedVal vStep vXLabels vXLabelsShort mActCat vObjLabels mLims ProbForm ...
+     cFunc BaseAxis Tolerance AllowableDeviation OptSolRow ...
+     NearOptConstraint blShowInset mMinMaxLabels] = ...
+          aGetField(varargin_rrax,{'vFixedVals','vStep','vXLabels','vXLabelsShort', ...
+                'mActCat','vObjLabels','mLims', 'ProbForm','cFunc','BaseAxis','Tolerance', ...
+                'AllowableDeviation','OptSolRow','NearOptConstraint','ShowInsetPlot',...
+                'mMinMaxLabels'});
+
     %[vFixedVal vSliderSteps vFixedValPU] = ReadSliderValues(sSliders,vFixedVal,mConvert); 
     %AllowableDeviation = GetCheckAllowableDeviation(txtAllowableDeviation,'Prune');
  
@@ -5316,7 +5408,8 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     end
         
     %retain the columns to keep
-    [mMatrixN, vFixedN, vFixedValN, vStepN,vLabelsAllN, mLimsN] = ReorderCols(vKeep,mMatrix,vFixed,vFixedVal',vStep,vLabelsAll,mLims);
+    [mMatrixN, vFixedN, vFixedValN, vStepN,vLabelsAllN, mLimsN, mMinMaxLabelsN] = ...
+        ReorderCols(vKeep,mMatrix,vFixed,vFixedVal',vStep,vLabelsAll,mLims,mMinMaxLabels);
     %retain objective-function specific columns
     [ToleranceN,OptSolRowN,NearOptConstraintN] = ReorderCols(vKeepObj,Tolerance,OptSolRow,NearOptConstraint);
     
@@ -5329,6 +5422,8 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
     [vXLabelsShortN,mActCatN] = ReorderCols(vKeepDec,vXLabelsShortUse,mActCat');
 
     mActCatN = mActCatN';
+    
+    ProbFormNew = ProbForm;
     
     if ~isempty(ProbForm)
        [AineqN, AeqN, lbN, ubN] = ReorderCols(vKeepDec,ProbForm.Aineq,ProbForm.Aeq,ProbForm.lb',ProbForm.ub');
@@ -5353,7 +5448,6 @@ function RearrangeAxes(hObj,event,FarDir,Direction,hWindCurr,mMatrix,nObjs) %#ok
             bineqN = bineqN(lRowsToKeep);
         end
        
-        ProbFormNew = ProbForm;
         ProbFormNew.Aineq = AineqN;
         ProbFormNew.Aeq = AeqN;
         ProbFormNew.lb = lbN';
@@ -5426,7 +5520,9 @@ end
     %Set parameters that were manipulated to pass via varargin
     varargout = aSetField(varargin_rrax,'tolerance',ToleranceN,'vFixed',vFixedN','vFixedVals',vFixedValN','vStep',vStepN,'vObjLabels',vObjLabelsN','vXLabels',vXLabelsN, ...
                 'vXLabelsShort',vXLabelsShortN,'mActCat',mActCatN,'AllowableDeviation',AllowableDeviation,'BaseAxis',BaseAxisN,'mLims',mLimsN,...
-                'ProbForm',ProbFormNew,'cFunc',cFuncN,'OptSolRow',OptSolRowN,'NearOptConstraint',NearOptConstraintN,'ShowInsetPlot',blShowInset);
+                'ProbForm',ProbFormNew,'cFunc',cFuncN,'OptSolRow',OptSolRowN, ...
+                'NearOptConstraint',NearOptConstraintN,'ShowInsetPlot',blShowInset, ...
+                'mMinMaxLabels',mMinMaxLabelsN);
     
     nearoptplotmo2(mObjs, mDecs,varargout{:});
 end
@@ -6210,7 +6306,10 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     %   (default is empty)
     
     [VarsRet, hCont, mObjsOrig, mDecsOrig] = ReadControls('AddObjectives',hCurr);
-    [ProbForm,cFuncOrig,NearOptConstraintOrig,OptSolRowOrig,vObjLabelsOrig, vToleranceOrig, sAxisScales, mLimsOrig, nOOrig, vGroups, blShowInset] = aGetField(VarsRet, {'ProbForm' 'cFunc'  'NearOptConstraint' 'OptSolRow' 'vObjLabels' 'tolerance', 'AxisScales' 'mLims' 'nO' 'vGroup' 'ShowInsetPlot'});
+    [ProbForm,cFuncOrig,NearOptConstraintOrig,OptSolRowOrig,vObjLabelsOrig, vToleranceOrig, sAxisScales, mLimsOrig, nOOrig, vGroups, blShowInset, sTickLabelPos, mMinMaxLabels] = ...
+            aGetField(VarsRet, {'ProbForm' 'cFunc'  'NearOptConstraint' 'OptSolRow' ...
+                'vObjLabels' 'tolerance' 'AxisScales' 'mLims' 'nO' 'vGroup' ...
+                'ShowInsetPlot' 'TickLabelPos' 'mMinMaxLabels'});
     
     %[lCon,nD] = size(AMatOrig);
     if isempty(ProbForm)
@@ -6360,6 +6459,14 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
         mLimsNew = mLimsOrig;
     end
     
+    %Split the mMinMaxLabels
+    if strcmpi(sTickLabelPos,'MinMaxEachAxis')
+        [mMMLabelsObj,mMMLabelsDec] = SplitMatrix(mMinMaxLabels,nOOrig);
+        mMinMaxLabelsNew = [mMMLabelsObj num2cell(cAnswers{7}) mMMLabelsDec];
+    else
+        mMinMaxLabelsNew = cell(2,nOOrig+nNewO+nD);
+    end
+    
     %Insert new default values for new objectives
     [vFixedOrig,vFixedValsOrig,vStepOrig] = aGetField(VarsRet, {'vFixed' 'vFixedVals' 'vStep'});
     vParamsToSplit = {vFixedOrig,vFixedValsOrig',vStepOrig};
@@ -6376,9 +6483,12 @@ function AddObjectives(hind,evnt,hCurr,dfAns)
     mDecsNew = [mDecsOrig; vOptSols];
     
     %Save the new parameters and dataset back to the Window so we can use them in resampling
-    VarsNew = aSetField(VarsRet,'ProbForm',ProbFormNew,'cFunc',cFuncNew,'NearOptConstraint',NearOptConstraintNew,'OptSolRow',OptSolRowNew, ... %'AMat',AMatNew,'Brhs',BrhsNew
-            'vObjLabels', vObjLabelsNew,'Tolerance',ToleranceNew,'mLims',mLimsNew,'nO',nOOrig+nNewO,'vGroup',vGroupNew,'mGroupData',mGroupDataNewSort(:,1:3), ...
-            'vFixed', vParamsNew{1},'vFixedVals',vParamsNew{2}','vStep',vParamsNew{3});       
+    VarsNew = aSetField(VarsRet,'ProbForm',ProbFormNew,'cFunc',cFuncNew, ...
+            'NearOptConstraint',NearOptConstraintNew,'OptSolRow',OptSolRowNew, ... %'AMat',AMatNew,'Brhs',BrhsNew
+            'vObjLabels', vObjLabelsNew,'Tolerance',ToleranceNew,'mLims',mLimsNew, ...
+            'nO',nOOrig+nNewO,'vGroup',vGroupNew,'mGroupData',mGroupDataNewSort(:,1:3), ...
+            'vFixed', vParamsNew{1},'vFixedVals',vParamsNew{2}','vStep',vParamsNew{3}, ...
+            'mMinMaxLabels',mMinMaxLabelsNew);       
     setappdata(hCurr,'varargs',VarsNew);
     setappdata(hCurr,'mObjs',mObjsNew);
     setappdata(hCurr,'mDecs',mDecsNew);   

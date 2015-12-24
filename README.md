@@ -11,7 +11,7 @@ Below is listing of the repository contents by folder as well as additional info
 
 Steps to Get Started:
 
-    a. Install Matlab version 2013 or higher on your computer.
+    a. Install Matlab on your computer (one of versions 2013a through 2015b).
     b. Install the General Algebraic Modeling System (GAMS) version 24.3.3 or more recent.
 	  
 	  i. Download from www.gams.com.
@@ -71,7 +71,9 @@ To get started:
 
 	       >> nearoptplotmo2(...)
 
-    e. See additional directions in the file InteractiveParallelPlot-readme.txt and in the header of the nearoptplotmo2.m for use of the function.
+    c. Additional example commands to run the interactive parallel coordinate plot tool are in ExampleTestPlots.m
+    d. See additional directions in the file InteractiveParallelPlot-readme.txt and in the header of the nearoptplotmo2.m for use of the function.
+
 
 ==============================
 4) ECHO RESERVOIR APPLICATION (Linear program to manage water quality)

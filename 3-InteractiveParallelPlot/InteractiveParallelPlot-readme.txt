@@ -63,4 +63,6 @@ Finally, mouse over any axis to read the value in real units.
 
 Again, all of the above interactive features can also be supplied as optional parameters in OptionList so that the plot opens with the feature active. See further documentation of OptionList within the header of the file nearoptplotmo2.m.
 
+ExampleTestPlots.m -- contains multiple commands that generate parallel coordinate plots that use several of the above features.
+
 All the other files in this folder are called by nearoptplotmo2.m to produce a plot. See further descriptions in the file headers.
