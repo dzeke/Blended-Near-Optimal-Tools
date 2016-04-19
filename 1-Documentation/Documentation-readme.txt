@@ -12,9 +12,9 @@ NearOptimalManagement-Lab.pdf : Step-by-step directions and instructions to use 
 
 Within the ScriptsForPaper folder:
 
-- Fig_GenForNearOptPaper.m : Matlab script to use to generate Figures 1, 2, 3, and 5 in the revised paper. To run this script, you must download all files in the AlternativeGeneration, InteractiveParallelPlot, and EchoReservoirApplication folders. In Matlab, add the folder where you downloaded the files to your Matlab path, set the Matlab directory to the same location, and enter the following command at the Matlab command prompt:
+- Fig_GenForNearOptPaper.m : Matlab script to use to generate Figures 1, 2, 3, and 5 in the revised paper. To run this script, you must download all files in the AlternativeGeneration, InteractiveParallelPlot, and EchoReservoirApplication folders. In Matlab, add the folder and all sub-folders where you downloaded the files to your Matlab path, set the Matlab directory to the subfolder /4-EchoReservoirApplication, and enter the following command at the Matlab command prompt:
 
-	>> FigGenForNearOptPaper
+	>> Fig_GenForNearOptPaper
 
 The file also has additional directions to interactively generate Figures 4, 5, 6, and 7 from Figure 3 as comments in the .m file. Figure 5 can also be automatically generated.
 

@@ -2933,7 +2933,10 @@ set(hWindReturn,'ResizeFcn',@ResizeCallback);
         %abort if the mouse is not near the axis or the axis is checked
         %(already fixed)
         if (abs(mouseX - cI) > 0.2)  || (cI>n) || (cI<1) || (mouseY < yrange(1)) || (mouseY>yrange(2))
-            return
+ %           sprintf('mouseX, mouseY, cI, yrange(1), yrange(2): %.2f, %.2f,
+ %           %.2f, %.2f, %.2f', mouseX, mouseY, cI, yrange(1), yrange(2))%
+
+           return
         end
 
         %Read in the variable arguments

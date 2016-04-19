@@ -171,7 +171,7 @@ function LoadAmmanJordan(GDXFile,NumAlts)
                 'yAxisLabels',{sprintf('%s\n%s','Expected Cost','($US Million)') sprintf('%s\n%s','Implementation Level','(Million m^{3} per year)')}, ...
                 'AxisScales','custom',[1 1],[zeros(1,19); 50*ones(1,19)],'sGamsFile','AmmanJordanOptNearInt.gms', ...
                 'GenerateType',4,'GenerateMethod',3,'mColorsAxisLabels',mColorAxisLabels};
-    hNEPlot = nearoptplotmo2(mObjs(vModelError==0,1),mActs(vModelError==0,:),vParams{:});
+    hNEPlot = nearoptplotmo2merg(mObjs(vModelError==0,1),mActs(vModelError==0,:),vParams{:});
     
     sprintf('%d alternatives loaded',NumAlts)
 end

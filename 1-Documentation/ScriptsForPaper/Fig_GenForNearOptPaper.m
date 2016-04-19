@@ -1,4 +1,4 @@
-%% FigGenForNearOptPaper.m
+%% Fig_GenForNearOptPaper.m
 % Matlab 2013b Script to generate Figures in the paper:
 % 
 %   David E. Rosenberg (2015) "Blended near-optimal alternative generation, 
